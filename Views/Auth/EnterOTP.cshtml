@@ -1,0 +1,24 @@
+@{
+    ViewData["Title"] = "Enter OTP";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="~/css/styles.css">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-box">
+            <h2>Enter OTP</h2>
+            <p>A 4-digit OTP has been sent to your email.</p>
+            <form method="post" action="/Auth/VerifyOTP">
+                <input type="text" name="OTP" placeholder="Enter OTP" required>
+                <button type="submit" class="btn primary">Verify OTP</button>
+                <a href="/Auth/ResendOTP" class="forgot-password">Resend OTP</a>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

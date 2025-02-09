@@ -1,0 +1,29 @@
+@{
+    ViewData["Title"] = "Login";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="~/css/styles.css">
+</head>
+<body>
+    <div class="auth-container">
+        <img src="~/images/logo.png" alt="Smart License Logo" class="logo">
+        <div class="auth-box">
+            <h2>Admin Login</h2>
+            <form method="post" action="/Account/Login">
+                <label>Username</label>
+                <input type="text" name="username" placeholder="Enter your username" required>
+
+                <label>Password</label>
+                <input type="password" name="password" placeholder="Enter your password" required>
+
+                <button type="submit" class="btn primary">Login</button>
+                <a href="/Account/ForgotPassword" class="forgot-password">Forgot Password?</a>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

@@ -23,5 +23,10 @@ namespace SmartLicense_AdminPanel.Controllers
         {
             return RedirectToAction("Index");
         }
+
+        public IActionResult FeedbackDetail()
+        {
+            return View();
+        }
     }
 }

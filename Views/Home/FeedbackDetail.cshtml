@@ -1,0 +1,25 @@
+@{
+    ViewData["Title"] = "Feedback";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>Feedback</h2>
+
+<div class="chat-container">
+    <div class="message user">
+        <strong>User Name</strong>
+        <span class="timestamp">A few moments ago</span>
+        <p>This is a feedback message that was sent by the user. It appears in a blue background to indicate it has been sent.</p>
+    </div>
+
+    <div class="message admin">
+        <strong>Admin Name</strong>
+        <span class="timestamp">Just now</span>
+        <p>This is a reply from the admin. Admins can respond to feedback messages here.</p>
+    </div>
+</div>
+
+<div class="chat-input">
+    <textarea placeholder="Write a feedback message..."></textarea>
+    <button class="btn send">Send</button>
+</div>
