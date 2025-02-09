@@ -1,0 +1,20 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Admin Panel</title>
+    <link rel="stylesheet" href="~/css/styles.css" />
+</head>
+<body>
+    <div class="layout">
+        @await Html.PartialAsync("_Sidebar")
+        <div class="content">
+            @await Html.PartialAsync("_Topbar")
+            <main>
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+</body>
+</html>
