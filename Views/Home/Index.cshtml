@@ -1,4 +1,5 @@
-﻿@{
+﻿@model IEnumerable<SmartLicense_AdminSide.Models.User>
+@{
     ViewData["Title"] = "Dashboard";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
@@ -14,23 +15,14 @@
         </tr>
     </thead>
     <tbody>
-        <tr>
-            <td>38455-9876345-3</td>
-            <td>Muhammad Huzaifa</td>
-            <td>76</td>
-            <td>Passed</td>
-        </tr>
-        <tr>
-            <td>38652-2119445-1</td>
-            <td>Usman Baig</td>
-            <td>73</td>
-            <td>Passed</td>
-        </tr>
-        <tr>
-            <td>38455-0985321-3</td>
-            <td>Abdullah Khan</td>
-            <td>30</td>
-            <td>Passed</td>
-        </tr>
+        @foreach (var user in Model)
+        {
+            <tr>
+                <td>@user.CNIC</td>
+                <td>@user.Name</td>
+                <td>@user.Age</td>
+                <td>@(user.HasLicence ? "Passed" : (user.HasLearnerLicence ? "In Progress" : "Not Started"))</td>
+            </tr>
+        }
     </tbody>
 </table>

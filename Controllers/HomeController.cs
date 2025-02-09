@@ -1,12 +1,23 @@
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Driver;
+using SmartLicense_AdminSide.Models;
 
 namespace SmartLicense_AdminPanel.Controllers
 {
     public class HomeController : Controller
     {
-        public IActionResult Index()
+        private readonly IMongoCollection<User> _usersCollection;
+
+        public HomeController(IMongoClient mongoClient)
         {
-            return View();
+            var database = mongoClient.GetDatabase("Liscence_system");
+            _usersCollection = database.GetCollection<User>("users");
+        }
+
+        public async Task<IActionResult> Index()
+        {
+            var users = await _usersCollection.Find(_ => true).ToListAsync();
+            return View(users);
         }
 
         public IActionResult Test()
