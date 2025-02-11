@@ -1,11 +1,16 @@
 /* Sidebar */
 .sidebar {
-  width: 250px;
+  width: 200px;
   height: 100vh;
   background: #0d47a1;
   color: white;
   padding: 20px;
   position: fixed;
+  font-size: 18px; /* increased font size */
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 9999;
 }
 
 .sidebar ul {
@@ -15,11 +20,22 @@
 
 .sidebar li {
   margin: 10px 0;
+  padding: 10px 0;
 }
 
 .sidebar a {
   color: white;
   text-decoration: none;
+  display: block; /* highlight entire row */
+  padding: 10px;
+}
+
+.sidebar a:hover {
+  background-color: #1565c0; /* entire row highlight */
+}
+
+.sidebar li.active a {
+  background-color: #003c8f; /* entire row highlight */
 }
 
 /* Topbar */
@@ -30,7 +46,7 @@
   align-items: center;
   padding: 10px;
   box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
-  margin-left: 250px;
+  margin-left: 200px;
 }
 
 .search-box {
@@ -49,8 +65,8 @@
 
 /* Main Content */
 .content {
-  margin-left: 250px;
-  padding: 20px;
+  padding: 30px;
+  margin-left: 220px;
 }
 
 .data-table {
