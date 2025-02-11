@@ -1,3 +1,5 @@
+@model SmartLicense_AdminSide.Models.User
+
 @{
     ViewData["Title"] = "Test";
     Layout = "~/Views/Shared/_Layout.cshtml";
@@ -5,29 +7,42 @@
 
 <h2>Test</h2>
 
-<div class="card">
-    <h3>Candidate Details</h3>
-    <div class="candidate-info">
-        <div>
-            <strong>CNIC:</strong> 38489-1234894-0
-        </div>
-        <div>
-            <strong>Name:</strong> Muhammad Huzaifa Ahmad
-        </div>
-        <div>
-            <strong>Age:</strong> 78
-        </div>
-        <div>
-            <strong>Driving Test:</strong> Unattempted
+@if (Model != null)
+{
+    <div class="card">
+        <h3>Candidate Details</h3>
+        <div class="candidate-info">
+            <div>
+                <strong>CNIC:</strong> @Model.CNIC
+            </div>
+            <div>
+                <strong>Name:</strong> @Model.Name
+            </div>
+            <div>
+                <strong>Age:</strong> @Model.Age
+            </div>
+            <div>
+                <strong>Driving Test:</strong> @(Model.HasLicence ? "Passed" : (Model.HasLearnerLicence ? "In Progress" : "Not Started"))
+            </div>
         </div>
     </div>
-</div>
 
-<div class="card">
-    <h3>Test Control</h3>
-    <div class="test-controls">
-        <button class="btn start">Start</button>
-        <button class="btn stop">Stop</button>
+    <div class="card">
+        <h3>Test Control</h3>
+        <div class="test-controls">
+            @if (!Model.HasLicence)
+            {
+                <button class="btn start">Start</button>
+                <button class="btn stop">Stop</button>
+            }
+        </div>
+        @if (Model.HasLicence)
+        {
+            <button class="btn report">View Test Report</button>
+        }
     </div>
-    <button class="btn report">View Test Report</button>
-</div>
+}
+else
+{
+    <div class="alert alert-warning">User not found</div>
+}

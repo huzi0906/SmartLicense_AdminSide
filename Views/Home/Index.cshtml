@@ -19,7 +19,7 @@
         {
             <tr>
                 <td>@user.CNIC</td>
-                <td>@user.Name</td>
+                <td><a href="@Url.Action("Test", "Home", new { cnic = user.CNIC })">@user.Name</a></td>
                 <td>@user.Age</td>
                 <td>@(user.HasLicence ? "Passed" : (user.HasLearnerLicence ? "In Progress" : "Not Started"))</td>
             </tr>

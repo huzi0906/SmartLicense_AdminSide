@@ -20,9 +20,16 @@ namespace SmartLicense_AdminPanel.Controllers
             return View(users);
         }
 
-        public IActionResult Test()
+        public async Task<IActionResult> Test(string cnic)
         {
-            return View();
+            if (string.IsNullOrEmpty(cnic))
+                return RedirectToAction("Index");
+
+            var user = await _usersCollection.Find(x => x.CNIC == cnic).FirstOrDefaultAsync();
+            if (user == null)
+                return RedirectToAction("Index");
+
+            return View(user);
         }
 
         public IActionResult Feedback()
