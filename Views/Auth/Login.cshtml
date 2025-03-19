@@ -6,28 +6,106 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="stylesheet" href="~/css/styles.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center; /* Centers the stack vertically */
+            align-items: center;     /* Centers the stack horizontally */
+            min-height: 100vh;       /* Ensures the body takes up full viewport height */
+            background-color: #f0f0f0;
+        }
+
+        .top-logo {
+            display: flex;
+            justify-content: center; /* Centers the logo image horizontally within this div */
+            margin-bottom: 20px;     /* Adds a gap between the logo and login form */
+        }
+
+        .auth-box {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            width: 300px;
+            text-align: center;
+        }
+
+        .auth-box h2 {
+            color: #333;
+            font-family: sans-serif;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .auth-box label {
+            display: block;
+            text-align: left;
+            color: #666;
+            font-family: sans-serif;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .auth-box input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            color: #000; /* Black text for what you type */
+        }
+
+        .auth-box input::placeholder {
+            font-style: italic;
+            color: #999; /* Gray and italic for placeholder */
+        }
+
+        .auth-box .btn.primary {
+            background-color: #007bff;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            width: 100%;
+            font-family: sans-serif;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .auth-box .forgot-password {
+            display: block;
+            text-align: right;
+            color: #007bff;
+            font-size: 12px;
+            text-decoration: underline;
+            margin-top: 10px;
+        }
+    </style>
 </head>
 <body>
-    <div class="auth-container">
-        <img src="~/images/logo.png" alt="Smart License Logo" class="logo">
-        <div class="auth-box">
-            <h2>Admin Login</h2>
-            @if (ViewBag.ErrorMessage != null)
-            {
-                <div style="color: red; margin-bottom: 15px;">@ViewBag.ErrorMessage</div>
-            }
-            <form method="post" action="/Auth/Login">
-                <label>Username</label>
-                <input type="text" name="Username" placeholder="Enter your username" required>
+    <div class="top-logo">
+        <img src="~/SmartLicense.png" alt="Smart License Logo" class="logo">
+    </div>
+    <div class="auth-box">
+        <h2>Admin Login</h2>
+        @if (ViewBag.ErrorMessage != null)
+        {
+            <div style="color: red; margin-bottom: 15px;">@ViewBag.ErrorMessage</div>
+        }
+        <form method="post" action="/Auth/Login">
+            <label>Username</label>
+            <input type="text" name="Username" placeholder="Enter your username" required>
 
-                <label>Password</label>
-                <input type="password" name="Password" placeholder="Enter your password" required>
+            <label>Password</label>
+            <input type="password" name="Password" placeholder="Enter your password" required>
 
-                <button type="submit" class="btn primary">Login</button>
-                <a href="/Auth/ForgotPassword" class="forgot-password">Forgot Password?</a>
-            </form>
-        </div>
+            <button type="submit" class="btn primary">Login</button>
+            <a href="/Auth/ForgotPassword" class="forgot-password">Forgot Password?</a>
+        </form>
     </div>
 </body>
 </html>
