@@ -32,8 +32,8 @@
         <div class="test-controls">
             @if (!Model.HasLicence)
             {
-                <button class="btn start">Start</button>
-                <button class="btn stop">Stop</button>
+                <button id="startButton" class="btn start" onclick="startTest()">Start</button>
+                <button id="stopButton" class="btn stop" onclick="stopTest()" disabled>Stop</button>
             }
         </div>
         @if (Model.HasLicence)
@@ -45,4 +45,35 @@
 else
 {
     <div class="alert alert-warning">User not found</div>
+}
+
+@section Scripts {
+    <script>
+        function startTest() {
+            console.log("Sending POST request to http://localhost:5000/start");
+            fetch('http://localhost:5000/start', {
+                method: 'POST',
+            })
+            .then(response => response.text())
+            .then(data => {
+                console.log("Response from start:", data);
+                document.getElementById('startButton').disabled = true;
+                document.getElementById('stopButton').disabled = false;
+            })
+            .catch(error => console.error("Error starting test:", error));
+        }
+
+        function stopTest() {
+            console.log("Sending POST request to http://localhost:5000/stop");
+            fetch('http://localhost:5000/stop', {
+                method: 'POST',
+            })
+            .then(response => response.text())
+            .then(data => {
+                console.log("Response from stop:", data);
+                document.getElementById('stopButton').disabled = true;
+            })
+            .catch(error => console.error("Error stopping test:", error));
+        }
+    </script>
 }
