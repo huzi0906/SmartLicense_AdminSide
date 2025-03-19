@@ -5,6 +5,8 @@ using MongoDB.Bson;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication;
 
 namespace SmartLicense_AdminPanel.Controllers
 {
@@ -229,9 +231,13 @@ namespace SmartLicense_AdminPanel.Controllers
             return RedirectToAction("FeedbackDetail", new { userId });
         }
 
-        public IActionResult Logout()
-        {
-            return RedirectToAction("Index");
-        }
+        public async Task<IActionResult> Logout()
+{
+    // Sign out the user by clearing the authentication cookie
+    await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+    // Redirect to the Login action in AuthController
+    return RedirectToAction("Login", "Auth");
+}
     }
 }
