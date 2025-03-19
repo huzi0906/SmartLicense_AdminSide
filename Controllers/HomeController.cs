@@ -135,24 +135,33 @@ namespace SmartLicense_AdminPanel.Controllers
                 // Add the old feedback messages to the new conversation system
                 foreach (var feedback in feedbacksCursor)
                 {
-                    var newMessage = new BsonDocument
+                    if (feedback.TryGetValue("feedback", out BsonValue fbMessageValue) && fbMessageValue.BsonType == BsonType.String)
                     {
-                        { "conversationId", new ObjectId(conversationId) },
-                        { "message", feedback["feedback"].AsString },
-                        { "sentAt", feedback["submittedAt"] },
-                        { "isAdminMessage", false }
-                    };
-                    
-                    await messageCollection.InsertOneAsync(newMessage);
-                    
-                    messages.Add(new ConversationMessage 
-                    {
-                        Id = newMessage["_id"].AsObjectId.ToString(),
-                        ConversationId = conversationId,
-                        Message = newMessage["message"].AsString,
-                        SentAt = newMessage["sentAt"].ToUniversalTime(),
-                        IsAdminMessage = false
-                    });
+                        var fbMessage = fbMessageValue.AsString;
+                        var fbSubmittedAt = feedback.TryGetValue("submittedAt", out BsonValue submittedAtValue) && submittedAtValue.BsonType == BsonType.DateTime
+                            ? submittedAtValue.ToUniversalTime()
+                            : DateTime.UtcNow;
+
+                        var newMessage = new BsonDocument
+                        {
+                            { "conversationId", new ObjectId(conversationId) },
+                            { "message", fbMessage },
+                            { "sentAt", fbSubmittedAt },
+                            { "isAdminMessage", false }
+                        };
+
+                        await messageCollection.InsertOneAsync(newMessage);
+
+                        messages.Add(new ConversationMessage
+                        {
+                            Id = newMessage["_id"].AsObjectId.ToString(),
+                            ConversationId = conversationId,
+                            Message = fbMessage,
+                            SentAt = fbSubmittedAt,
+                            IsAdminMessage = false
+                        });
+                    }
+                    // Optionally log or skip if feedback is missing, but no exception will occur
                 }
             }
             else
@@ -167,13 +176,27 @@ namespace SmartLicense_AdminPanel.Controllers
                     
                 foreach (var message in messagesCursor)
                 {
+                    string msgContent = message.TryGetValue("message", out BsonValue msgValue) && msgValue.BsonType == BsonType.String
+                        ? msgValue.AsString
+                        : string.Empty;
+
+                    DateTime sentAt = message.TryGetValue("sentAt", out BsonValue sentAtValue) && sentAtValue.BsonType == BsonType.DateTime
+                        ? sentAtValue.ToUniversalTime()
+                        : DateTime.MinValue;
+
+                    bool isAdmin = message.TryGetValue("isAdminMessage", out BsonValue isAdminValue) && isAdminValue.BsonType == BsonType.Boolean
+                        ? isAdminValue.AsBoolean
+                        : false;
+
+                    string id = message["_id"].AsObjectId.ToString();
+
                     messages.Add(new ConversationMessage
                     {
-                        Id = message["_id"].AsObjectId.ToString(),
+                        Id = id,
                         ConversationId = conversationId,
-                        Message = message["message"].AsString,
-                        SentAt = message["sentAt"].ToUniversalTime(),
-                        IsAdminMessage = message["isAdminMessage"].AsBoolean
+                        Message = msgContent,
+                        SentAt = sentAt,
+                        IsAdminMessage = isAdmin
                     });
                 }
             }
@@ -232,12 +255,12 @@ namespace SmartLicense_AdminPanel.Controllers
         }
 
         public async Task<IActionResult> Logout()
-{
-    // Sign out the user by clearing the authentication cookie
-    await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        {
+            // Sign out the user by clearing the authentication cookie
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
-    // Redirect to the Login action in AuthController
-    return RedirectToAction("Login", "Auth");
-}
+            // Redirect to the Login action in AuthController
+            return RedirectToAction("Login", "Auth");
+        }
     }
 }
