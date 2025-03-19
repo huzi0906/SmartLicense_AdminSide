@@ -13,15 +13,19 @@
         <img src="~/images/logo.png" alt="Smart License Logo" class="logo">
         <div class="auth-box">
             <h2>Admin Login</h2>
-            <form method="post" action="/Account/Login">
+            @if (ViewBag.ErrorMessage != null)
+            {
+                <div style="color: red; margin-bottom: 15px;">@ViewBag.ErrorMessage</div>
+            }
+            <form method="post" action="/Auth/Login">
                 <label>Username</label>
-                <input type="text" name="username" placeholder="Enter your username" required>
+                <input type="text" name="Username" placeholder="Enter your username" required>
 
                 <label>Password</label>
-                <input type="password" name="password" placeholder="Enter your password" required>
+                <input type="password" name="Password" placeholder="Enter your password" required>
 
                 <button type="submit" class="btn primary">Login</button>
-                <a href="/Account/ForgotPassword" class="forgot-password">Forgot Password?</a>
+                <a href="/Auth/ForgotPassword" class="forgot-password">Forgot Password?</a>
             </form>
         </div>
     </div>
