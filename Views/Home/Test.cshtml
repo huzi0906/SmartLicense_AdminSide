@@ -30,6 +30,7 @@
     <div class="card">
         <h3>Test Control</h3>
         <div class="test-controls">
+            <div id="statusMessage" style="color: #333; margin-bottom: 10px;"></div>
             @if (!Model.HasLicence)
             {
                 <button id="startButton" class="btn start" onclick="startTest()">Start</button>
@@ -51,29 +52,40 @@ else
     <script>
         function startTest() {
             console.log("Sending POST request to http://localhost:5000/start");
+            document.getElementById('statusMessage').innerText = "Starting test...";
             fetch('http://localhost:5000/start', {
                 method: 'POST',
             })
             .then(response => response.text())
             .then(data => {
                 console.log("Response from start:", data);
+                document.getElementById('statusMessage').innerText = "Test started successfully";
                 document.getElementById('startButton').disabled = true;
                 document.getElementById('stopButton').disabled = false;
             })
-            .catch(error => console.error("Error starting test:", error));
+            .catch(error => {
+                console.error("Error starting test:", error);
+                document.getElementById('statusMessage').innerText = "Error starting test";
+            });
         }
 
         function stopTest() {
             console.log("Sending POST request to http://localhost:5000/stop");
+            document.getElementById('statusMessage').innerText = "Stopping test...";
             fetch('http://localhost:5000/stop', {
                 method: 'POST',
             })
             .then(response => response.text())
             .then(data => {
                 console.log("Response from stop:", data);
+                document.getElementById('statusMessage').innerText = "Test stopped successfully";
                 document.getElementById('stopButton').disabled = true;
+                document.getElementById('startButton').disabled = false;
             })
-            .catch(error => console.error("Error stopping test:", error));
+            .catch(error => {
+                console.error("Error stopping test:", error);
+                document.getElementById('statusMessage').innerText = "Error stopping test";
+            });
         }
     </script>
 }
