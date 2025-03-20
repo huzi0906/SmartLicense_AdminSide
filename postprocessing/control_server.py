@@ -153,7 +153,7 @@ def stop_server():
             check=True,
         )
 
-        remote_log_file = f"/home/abdullah/Desktop/{cnic}_sensor_log.txt"
+        remote_log_file = f"/home/abdullah/Desktop/{cnic}.txt"
         local_log_file = f"./{cnic}_sensor_log.txt"
         scp_log_result = subprocess.run(
             [
@@ -175,7 +175,7 @@ def stop_server():
             scp_video_result = subprocess.run(
                 [
                     "scp",
-                    f"{RASPBERRY_PI_USER}@{RASPBERRY_PI_HOST}:/home/abdullah/Desktop/{cnic}_*.mp4",
+                    f"{RASPBERRY_PI_USER}@{RASPBERRY_PI_HOST}:/home/abdullah/Desktop/{cnic}.mp4",
                     "./",
                 ],
                 capture_output=True,
