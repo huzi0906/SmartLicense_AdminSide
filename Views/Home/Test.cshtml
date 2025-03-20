@@ -33,7 +33,7 @@
             <div id="statusMessage" style="color: #333; margin-bottom: 10px;"></div>
             @if (!Model.HasLicence)
             {
-                <button id="startButton" class="btn start" onclick="startTest()">Start</button>
+                <button id="startButton" class="btn start" data-cnic="@Model.CNIC" onclick="startTest()">Start</button>
                 <button id="stopButton" class="btn stop" onclick="stopTest()">Stop</button>
             }
         </div>
@@ -51,41 +51,57 @@ else
 @section Scripts {
     <script>
         function startTest() {
-            console.log("Sending POST request to http://localhost:5000/start");
-            document.getElementById('statusMessage').innerText = "Starting test...";
-            fetch('http://localhost:5000/start', {
-                method: 'POST',
-            })
-            .then(response => response.text())
-            .then(data => {
-                console.log("Response from start:", data);
-                document.getElementById('statusMessage').innerText = "Test started successfully";
-                document.getElementById('startButton').disabled = true;
-                document.getElementById('stopButton').disabled = false;
-            })
-            .catch(error => {
-                console.error("Error starting test:", error);
-                document.getElementById('statusMessage').innerText = "Error starting test";
-            });
-        }
+    var cnic = document.getElementById('startButton').dataset.cnic;
+    localStorage.setItem('cnic', cnic);
+    console.log("Sending POST request to http://localhost:5000/start with CNIC:", cnic);
+    fetch('http://localhost:5000/start', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ cnic: cnic })
+    })
+    .then(response => response.text())
+    .then(data => {
+        console.log("Response from start:", data);
+        document.getElementById('statusMessage').innerText = "Test started successfully";
+        document.getElementById('startButton').disabled = true;
+        document.getElementById('stopButton').disabled = false;
+    })
+    .catch(error => {
+        console.error("Error starting test:", error);
+        document.getElementById('statusMessage').innerText = "Error starting test";
+    });
+}
 
         function stopTest() {
-            console.log("Sending POST request to http://localhost:5000/stop");
-            document.getElementById('statusMessage').innerText = "Stopping test...";
-            fetch('http://localhost:5000/stop', {
-                method: 'POST',
-            })
-            .then(response => response.text())
-            .then(data => {
-                console.log("Response from stop:", data);
-                document.getElementById('statusMessage').innerText = "Test stopped successfully";
-                document.getElementById('stopButton').disabled = true;
-                document.getElementById('startButton').disabled = false;
-            })
-            .catch(error => {
-                console.error("Error stopping test:", error);
-                document.getElementById('statusMessage').innerText = "Error stopping test";
-            });
-        }
+    var cnic = localStorage.getItem('cnic');
+    if (!cnic) {
+        console.error("CNIC not found in local storage");
+        document.getElementById('statusMessage').innerText = "Error: CNIC not found";
+        return;
+    }
+    console.log("Sending POST request to http://localhost:5000/stop with CNIC:", cnic);
+    document.getElementById('statusMessage').innerText = "Stopping test...";
+    fetch('http://localhost:5000/stop', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ cnic: cnic })
+    })
+    .then(response => response.text())
+    .then(data => {
+        console.log("Response from stop:", data);
+        document.getElementById('statusMessage').innerText = "Test stopped successfully";
+        document.getElementById('stopButton').disabled = true;
+        document.getElementById('startButton').disabled = false;
+        localStorage.removeItem('cnic'); // Clear CNIC after stopping
+    })
+    .catch(error => {
+        console.error("Error stopping test:", error);
+        document.getElementById('statusMessage').innerText = "Error stopping test";
+    });
+}
     </script>
 }
