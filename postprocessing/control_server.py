@@ -77,8 +77,8 @@
 # if __name__ == "__main__":
 #     app.run(host="0.0.0.0", port=5000, debug=True)
 from flask import Flask, request
-import subprocess
 from flask_cors import CORS
+import subprocess
 import os
 
 app = Flask(__name__)
@@ -94,10 +94,6 @@ LOCAL_LOG_FILE = "./sensor_log.txt"
 
 @app.route("/start", methods=["POST"])
 def start_server():
-    data = request.get_json()
-    cnic = data.get('cnic') if data else None
-    if not cnic:
-        return "Missing CNIC", 400
     try:
         # Run the start command and capture output
         result = subprocess.run(
@@ -106,14 +102,14 @@ def start_server():
                 "-o",
                 "ServerAliveInterval=60",  # Keep SSH alive
                 f"{RASPBERRY_PI_USER}@{RASPBERRY_PI_HOST}",
-                f"bash {MANAGE_SCRIPT} start {cnic}",
+                f"bash {MANAGE_SCRIPT} start",
             ],
             capture_output=True,
             text=True,
             check=True,
         )
         return (
-            f"Server started for CNIC {cnic}:\n{result.stdout}\nErrors (if any): {result.stderr}",
+            f"Server started:\n{result.stdout}\nErrors (if any): {result.stderr}",
             200,
         )
     except subprocess.CalledProcessError as e:
@@ -122,10 +118,6 @@ def start_server():
 
 @app.route("/stop", methods=["POST"])
 def stop_server():
-    data = request.get_json()
-    cnic = data.get('cnic') if data else None
-    if not cnic:
-        return "Missing CNIC", 400
     try:
         # Stop the server
         stop_result = subprocess.run(
@@ -134,7 +126,7 @@ def stop_server():
                 "-o",
                 "ServerAliveInterval=60",  # Keep SSH alive
                 f"{RASPBERRY_PI_USER}@{RASPBERRY_PI_HOST}",
-                f"bash {MANAGE_SCRIPT} stop {cnic}",
+                f"bash {MANAGE_SCRIPT} stop",
             ],
             capture_output=True,
             text=True,
@@ -153,19 +145,6 @@ def stop_server():
             check=True,
         )
 
-        remote_log_file = f"/home/abdullah/Desktop/{cnic}_sensor_log.txt"
-        local_log_file = f"./{cnic}_sensor_log.txt"
-        scp_log_result = subprocess.run(
-            [
-                "scp",
-                f"{RASPBERRY_PI_USER}@{RASPBERRY_PI_HOST}:{remote_log_file}",
-                local_log_file,
-            ],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-
         # Read the log file content for verification
         with open(LOCAL_LOG_FILE, "r") as f:
             log_content = f.read()
@@ -175,7 +154,7 @@ def stop_server():
             scp_video_result = subprocess.run(
                 [
                     "scp",
-                    f"{RASPBERRY_PI_USER}@{RASPBERRY_PI_HOST}:/home/abdullah/Desktop/{cnic}_*.mp4",
+                    f"{RASPBERRY_PI_USER}@{RASPBERRY_PI_HOST}:/home/abdullah/Desktop/mobile_log_*.mp4",
                     "./",
                 ],
                 capture_output=True,
