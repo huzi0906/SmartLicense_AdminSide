@@ -89,7 +89,7 @@ RASPBERRY_PI_USER = "abdullah"
 RASPBERRY_PI_HOST = "192.168.100.174"
 MANAGE_SCRIPT = "/home/abdullah/Desktop/manage_server.sh"
 REMOTE_LOG_FILE = "/home/abdullah/Desktop/sensor_log.txt"
-LOCAL_LOG_FILE = "./sensor_log.txt"
+LOCAL_LOG_FILE = "./steps/sensor_log.txt"
 
 
 @app.route("/start", methods=["POST"])
@@ -155,8 +155,8 @@ def stop_server():
             scp_video_result = subprocess.run(
                 [
                     "scp",
-                    f"{RASPBERRY_PI_USER}@{RASPBERRY_PI_HOST}:/home/abdullah/Desktop/mobile_log_*.mp4",
-                    "./",
+                    f"{RASPBERRY_PI_USER}@{RASPBERRY_PI_HOST}:/home/abdullah/Desktop/video_data.mp4",
+                    "./steps/",
                 ],
                 capture_output=True,
                 text=True,
