@@ -1,4 +1,5 @@
 ﻿@model IEnumerable<SmartLicense_AdminSide.Models.User>
+
 @{
     ViewData["Title"] = "Dashboard";
     Layout = "~/Views/Shared/_Layout.cshtml";
@@ -21,7 +22,24 @@
                 <td>@user.CNIC</td>
                 <td><a href="@Url.Action("Test", "Home", new { cnic = user.CNIC })">@user.Name</a></td>
                 <td>@user.Age</td>
-                <td>@(user.HasLicence ? "Passed" : (user.HasLearnerLicence ? "In Progress" : "Not Started"))</td>
+                <td>
+                    @if (user.PassTest)
+                    {
+                        @:Passed
+                    }
+                    else if (user.HasLearnerLicence)
+                    {
+                        @:In Progress
+                    }
+                    else if (user.TestCompleted)
+                    {
+                        @:Failed
+                    }
+                    else
+                    {
+                        @:Not Started
+                    }
+                </td>
             </tr>
         }
     </tbody>

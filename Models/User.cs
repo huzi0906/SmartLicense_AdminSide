@@ -36,5 +36,29 @@ namespace SmartLicense_AdminSide.Models
         
         [BsonElement("hasLicence")]
         public bool HasLicence { get; set; }
+
+        [BsonElement("reverseParkingScore")]
+        public int ReverseParkingScore { get; set; } = 0;
+
+        [BsonElement("handsOnSteeringScore")]
+        public int HandsOnSteeringScore { get; set; } = 0;
+
+        [BsonElement("seatbeltScore")]
+        public int SeatbeltScore { get; set; } = 0;
+
+        [BsonElement("totalScore")]
+        public double TotalScore { get; set; } = 0.0;
+
+        [BsonElement("testCompleted")]
+        public bool TestCompleted { get; set; } = false;
+
+        [BsonElement("passTest")]
+        public bool PassTest { get; set; } = false;
+
+        [BsonElement("driverEyeScore")]
+        public int DriverEyeScore { get; set; } = 0;
+
+        [BsonElement("parallelParkingScore")]
+        public int ParallelParkingScore { get; set; } = 0;
     }
 }

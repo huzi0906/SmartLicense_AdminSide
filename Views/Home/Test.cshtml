@@ -22,7 +22,23 @@
                 <strong>Age:</strong> @Model.Age
             </div>
             <div>
-                <strong>Driving Test:</strong> @(Model.HasLicence ? "Passed" : (Model.HasLearnerLicence ? "In Progress" : "Not Started"))
+                <strong>Driving Test:</strong> 
+                @if (Model.PassTest)
+                {
+                    @:Passed
+                }
+                else if (Model.HasLearnerLicence)
+                {
+                    @:In Progress
+                }
+                else if (Model.TestCompleted)
+                {
+                    @:Failed
+                }
+                else
+                {
+                    @:Not Started
+                }
             </div>
         </div>
     </div>
@@ -31,16 +47,75 @@
         <h3>Test Control</h3>
         <div class="test-controls">
             <div id="statusMessage" style="color: #333; margin-bottom: 10px;"></div>
-            @if (!Model.HasLicence)
-            {
-                <button id="startButton" class="btn start" onclick="startTest()">Start</button>
-                <button id="stopButton" class="btn stop" onclick="stopTest()">Stop</button>
+            @{
+                bool isFailed = !Model.PassTest && !Model.HasLearnerLicence && Model.TestCompleted;
             }
+            @if (isFailed)
+            {
+                <div class="button-row">
+                    <div class="left-buttons">
+                        <button id="startButton" class="btn start" onclick="startTest()">Start</button>
+                        <button id="stopButton" class="btn stop" onclick="stopTest()">Stop</button>
+                    </div>
+                    <div class="center-button">
+                        <button id="reportButton" class="btn report" onclick="toggleReport()">View Feedback</button>
+                    </div>
+                </div>
+            }
+            else if (!Model.HasLicence)
+            {
+                <div class="button-row">
+                    <div class="left-buttons">
+                        <button id="startButton" class="btn start" onclick="startTest()">Start</button>
+                        <button id="stopButton" class="btn stop" onclick="stopTest()">Stop</button>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="button-row">
+                    <div class="center-button">
+                        <button id="reportButton" class="btn report" onclick="toggleReport()">View Test Report</button>
+                    </div>
+                </div>
+            }
+            <div id="testReport" style="display: none;" class="mt-3">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Metric</th>
+                            <th>Score</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Reverse Parking</td>
+                            <td>@Model.ReverseParkingScore</td>
+                        </tr>
+                        <tr>
+                            <td>Hands on Steering</td>
+                            <td>@Model.HandsOnSteeringScore</td>
+                        </tr>
+                        <tr>
+                            <td>Seatbelt</td>
+                            <td>@Model.SeatbeltScore</td>
+                        </tr>
+                        <tr>
+                            <td>Driver Eye</td>
+                            <td>@Model.DriverEyeScore</td>
+                        </tr>
+                        <tr>
+                            <td>Parallel Parking</td>
+                            <td>@Model.ParallelParkingScore</td>
+                        </tr>
+                        <tr>
+                            <td>Total Score</td>
+                            <td>@Model.TotalScore</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
-        @if (Model.HasLicence)
-        {
-            <button class="btn report">View Test Report</button>
-        }
     </div>
 }
 else
@@ -49,6 +124,96 @@ else
 }
 
 @section Scripts {
+    <style>
+        .button-row {
+            display: flex;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .left-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .center-button {
+            flex-grow: 0;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .btn.report {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            min-width: 150px;
+        }
+
+        .btn.report:hover {
+            background-color: #0056b3;
+        }
+
+        .btn.start, .btn.stop {
+            background-color: #28a745;
+            color: white;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            min-width: 100px;
+        }
+
+        .btn.stop {
+            background-color: #dc3545;
+        }
+
+        .btn.start:hover {
+            background-color: #218838;
+        }
+
+        .btn.stop:hover {
+            background-color: #c82333;
+        }
+
+        .test-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+        }
+
+        .table {
+            width: 100%;
+            max-width: 500px;
+            margin: 10px auto 0;
+        }
+
+        .alert {
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        #statusMessage {
+            text-align: center;
+            width: 100%;
+            font-weight: 500;
+        }
+
+        #testReport {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            margin-top: 15px;
+        }
+    </style>
     <script>
         function startTest() {
             console.log("Sending POST request to http://localhost:5000/start");
@@ -86,6 +251,22 @@ else
                 console.error("Error stopping test:", error);
                 document.getElementById('statusMessage').innerText = "Error stopping test";
             });
+        }
+
+        function toggleReport() {
+            var reportDiv = document.getElementById('testReport');
+            var button = document.getElementById('reportButton');
+            if (reportDiv) {
+                if (reportDiv.style.display === 'none') {
+                    reportDiv.style.display = 'flex';
+                    button.innerText = 'Close Feedback';
+                } else {
+                    reportDiv.style.display = 'none';
+                    button.innerText = 'View Feedback';
+                }
+            } else {
+                console.error('testReport div not found');
+            }
         }
     </script>
 }
