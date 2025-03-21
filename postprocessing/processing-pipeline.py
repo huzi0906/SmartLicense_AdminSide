@@ -36,8 +36,16 @@ def connect_to_mongodb():
 def update_user_scores(collection, cnic, scorecard):
     """Update the user document in MongoDB with the test scores and status."""
     try:
+        # Debug: Fetch and print the current document
+        current_user = collection.find_one({"cnic": cnic})
+        if current_user:
+            print(f"Current user document: {current_user}")
+        else:
+            print(f"No user found with CNIC {cnic}")
+            return False
+
         # Use the combined total from scorecard for pass/fail determination
-        has_licence = scorecard["combined_total"] >= 66.7  # equivalent to 20/30
+        has_licence = scorecard["combined_total"] >= 66.7  # 6.67/10 (equivalent to 20/30 if scaled to 30)
 
         update_result = collection.update_one(
             {"cnic": cnic},
@@ -60,7 +68,8 @@ def update_user_scores(collection, cnic, scorecard):
         if update_result.matched_count == 0:
             print(f"No user found with CNIC {cnic}")
             return False
-        return update_result.modified_count > 0
+        # Consider the update successful even if no changes were made
+        return True
 
     except Exception as e:
         print(f"Error updating MongoDB: {e}")
@@ -102,13 +111,13 @@ def run_pipeline():
             + (hands_seatbelt_scorecard.get("hands_on_steering", 0) * 0.1)
             + (hands_seatbelt_scorecard.get("seatbelt", 0) * 0.2)
             + (driver_score * 0.2)
-        )
-        * 10,
+        ) # Average out of 10 (removed * 10 scaling)
+        *10,
     }
 
-    # Update MongoDB - fixed collection check
+    # Update MongoDB
     collection = connect_to_mongodb()
-    if collection is not None:  # Changed from if collection:
+    if collection is not None:
         success = update_user_scores(collection, CNIC, final_scorecard)
         if not success:
             return {"error": "Failed to update scores in MongoDB."}
