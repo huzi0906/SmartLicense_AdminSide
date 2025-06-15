@@ -14,6 +14,25 @@ builder.Configuration.AddEnvironmentVariables();
 builder.Services.AddSingleton<IMongoClient>(sp =>
     new MongoClient(builder.Configuration["MONGODB_URI"]));
 
+// Register IMongoDatabase using the configured database name
+builder.Services.AddScoped<IMongoDatabase>(sp =>
+{
+    var client = sp.GetRequiredService<IMongoClient>();
+    var dbName = builder.Configuration["MONGODB_DATABASE"];
+    return client.GetDatabase(dbName);
+});
+
+// Add CORS policy
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("CorsPolicy",
+        builder => builder
+            .WithOrigins("http://localhost:3000") // Adjust to match your React app's URL
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials());
+});
+
 // Add services to the container
 builder.Services.AddControllersWithViews();
 builder.Services.AddSignalR(); // Add SignalR services
@@ -45,6 +64,7 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
+app.UseCors("CorsPolicy"); // Apply CORS before routing
 app.UseAuthentication(); // Must be before UseAuthorization
 app.UseSession();
 app.UseAuthorization();

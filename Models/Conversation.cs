@@ -9,10 +9,10 @@ namespace SmartLicense_AdminSide.Models
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
-        public string Id { get; set; }
+        public string Id { get; set; } = null!;
 
         [BsonRepresentation(BsonType.ObjectId)]
-        public string UserId { get; set; }
+        public string UserId { get; set; } = null!;
         
         public DateTime CreatedAt { get; set; }
         

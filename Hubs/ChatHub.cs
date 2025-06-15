@@ -48,9 +48,10 @@ namespace SmartLicense_AdminSide.Hubs
                 var user = await _chatService.GetUserAsync(userId);
                 var senderName = isAdminMessage ? "Administrator" : (user?.Name ?? "User");
 
-                // Prepare message data for clients
+                // Prepare message data for clients, including message ID
                 var messageData = new
                 {
+                    id = savedMessage.Id.ToString(), // Include the MongoDB message ID
                     message = savedMessage.Message,
                     isAdminMessage = savedMessage.IsAdminMessage,
                     senderName = senderName,

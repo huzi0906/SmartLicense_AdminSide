@@ -10,7 +10,8 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication;
 
 namespace SmartLicense_AdminPanel.Controllers
-{    public class HomeController : Controller
+{
+    public class HomeController : Controller
     {
         private readonly IMongoCollection<User> _usersCollection;
         private readonly IMongoDatabase _database;
@@ -81,7 +82,9 @@ namespace SmartLicense_AdminPanel.Controllers
             }).ToList();
 
             return View(conversationList);
-        }        public async Task<IActionResult> FeedbackDetail(string userId)
+        }
+
+        public async Task<IActionResult> FeedbackDetail(string userId)
         {
             if (string.IsNullOrEmpty(userId))
                 return RedirectToAction("Feedback");
@@ -112,7 +115,9 @@ namespace SmartLicense_AdminPanel.Controllers
                 // Log error and redirect
                 return RedirectToAction("Feedback");
             }
-        }[HttpPost]
+        }
+
+        [HttpPost]
         public async Task<IActionResult> SendReply(string userId, string message)
         {
             // This method is now deprecated in favor of SignalR real-time messaging
@@ -228,7 +233,8 @@ namespace SmartLicense_AdminPanel.Controllers
                     .GroupBy(v => v.Type)
                     .ToDictionary(g => g.Key, g => g.Count()),
                 RecentViolations = violations.Take(10).ToList()
-            };            ViewBag.User = user;
+            };
+            ViewBag.User = user;
             ViewBag.ViolationSummary = violationSummary;
             return View(violations);
         }
@@ -274,7 +280,8 @@ namespace SmartLicense_AdminPanel.Controllers
                     success = true,
                     violations = violationData,
                     summary = summary
-                });            }
+                });
+            }
             catch (Exception)
             {
                 // Log the exception if you have logging configured
@@ -292,7 +299,10 @@ namespace SmartLicense_AdminPanel.Controllers
                     Id = ObjectId.GenerateNewId().ToString(),
                     Name = "Test User",
                     CNIC = "12345-6789012-3",
-                    Email = "test@example.com"
+                    Address = "Test Address",
+                    Contact = "123-456-7890",
+                    FatherName = "Test Father",
+                    MotherName = "Test Mother"
                 };
 
                 await _usersCollection.InsertOneAsync(testUser);

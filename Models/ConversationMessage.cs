@@ -8,12 +8,12 @@ namespace SmartLicense_AdminSide.Models
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
-        public string Id { get; set; }
+        public string Id { get; set; } = null!;
 
         [BsonRepresentation(BsonType.ObjectId)]
-        public string ConversationId { get; set; }
+        public string ConversationId { get; set; } = null!;
         
-        public string Message { get; set; }
+        public required string Message { get; set; }
         
         public DateTime SentAt { get; set; }
         

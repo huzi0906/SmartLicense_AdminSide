@@ -4,9 +4,9 @@ namespace SmartLicense_AdminSide.Models
 {
     public class FeedbackDetailViewModel
     {
-        public string UserId { get; set; }
-        public string UserName { get; set; }
-        public string UserCNIC { get; set; }
-        public List<ConversationMessage> Messages { get; set; }
+        public required string UserId { get; set; }
+        public required string UserName { get; set; }
+        public required string UserCNIC { get; set; }
+        public required List<ConversationMessage> Messages { get; set; }
     }
 }
