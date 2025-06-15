@@ -1,0 +1,465 @@
+@model List<SmartLicense_AdminSide.Models.Violation>
+
+@{
+    ViewData["Title"] = "Violation Report";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var user = ViewBag.User as SmartLicense_AdminSide.Models.User;
+    var summary = ViewBag.ViolationSummary;
+}
+
+<div class="report-header">
+    <h2>Driving Test Violation Report</h2>
+    <div class="report-actions">
+        <button onclick="window.print()" class="btn btn-primary">Print Report</button>
+        <a href="@Url.Action("Test", "Home", new { cnic = user?.CNIC })" class="btn btn-secondary">Back to Test</a>
+    </div>
+</div>
+
+@if (user != null)
+{
+    <div class="report-content">
+        <!-- Executive Summary -->
+        <div class="report-section">
+            <h3>Executive Summary</h3>
+            <div class="executive-summary">
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <label>Candidate Name:</label>
+                        <span>@user.Name</span>
+                    </div>
+                    <div class="summary-item">
+                        <label>CNIC:</label>
+                        <span>@user.CNIC</span>
+                    </div>
+                    <div class="summary-item">
+                        <label>Test Result:</label>
+                        <span class="@(user.PassTest ? "text-success" : "text-danger")">
+                            @(user.PassTest ? "PASSED" : "FAILED")
+                        </span>
+                    </div>
+                    <div class="summary-item">
+                        <label>Total Score:</label>
+                        <span>@user.TotalScore/100</span>
+                    </div>
+                    <div class="summary-item">
+                        <label>Total Violations:</label>
+                        <span class="@(Model.Count > 0 ? "text-warning" : "text-success")">@Model.Count</span>
+                    </div>
+                    <div class="summary-item">
+                        <label>Report Generated:</label>
+                        <span>@DateTime.Now.ToString("MMM dd, yyyy HH:mm")</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Score Breakdown -->
+        <div class="report-section">
+            <h3>Test Score Breakdown</h3>
+            <table class="score-table">
+                <thead>
+                    <tr>
+                        <th>Test Component</th>
+                        <th>Score</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Reverse Parking</td>
+                        <td>@user.ReverseParkingScore/10</td>
+                        <td><span class="badge @(user.ReverseParkingScore >= 7 ? "badge-success" : user.ReverseParkingScore >= 5 ? "badge-warning" : "badge-danger")">
+                            @(user.ReverseParkingScore >= 7 ? "Good" : user.ReverseParkingScore >= 5 ? "Fair" : "Poor")
+                        </span></td>
+                    </tr>
+                    <tr>
+                        <td>Parallel Parking</td>
+                        <td>@user.ParallelParkingScore/10</td>
+                        <td><span class="badge @(user.ParallelParkingScore >= 7 ? "badge-success" : user.ParallelParkingScore >= 5 ? "badge-warning" : "badge-danger")">
+                            @(user.ParallelParkingScore >= 7 ? "Good" : user.ParallelParkingScore >= 5 ? "Fair" : "Poor")
+                        </span></td>
+                    </tr>
+                    <tr>
+                        <td>Hands on Steering</td>
+                        <td>@user.HandsOnSteeringScore/10</td>
+                        <td><span class="badge @(user.HandsOnSteeringScore >= 7 ? "badge-success" : user.HandsOnSteeringScore >= 5 ? "badge-warning" : "badge-danger")">
+                            @(user.HandsOnSteeringScore >= 7 ? "Good" : user.HandsOnSteeringScore >= 5 ? "Fair" : "Poor")
+                        </span></td>
+                    </tr>
+                    <tr>
+                        <td>Seatbelt Usage</td>
+                        <td>@user.SeatbeltScore/10</td>
+                        <td><span class="badge @(user.SeatbeltScore >= 7 ? "badge-success" : user.SeatbeltScore >= 5 ? "badge-warning" : "badge-danger")">
+                            @(user.SeatbeltScore >= 7 ? "Good" : user.SeatbeltScore >= 5 ? "Fair" : "Poor")
+                        </span></td>
+                    </tr>
+                    <tr>
+                        <td>Driver Eye Tracking</td>
+                        <td>@user.DriverEyeScore/10</td>
+                        <td><span class="badge @(user.DriverEyeScore >= 7 ? "badge-success" : user.DriverEyeScore >= 5 ? "badge-warning" : "badge-danger")">
+                            @(user.DriverEyeScore >= 7 ? "Good" : user.DriverEyeScore >= 5 ? "Fair" : "Poor")
+                        </span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Violations Analysis -->
+        @if (Model.Any())
+        {
+            <div class="report-section">
+                <h3>Violations Analysis</h3>
+                
+                <!-- Violation Summary Chart -->
+                <div class="violation-summary-chart">
+                    <h4>Violations by Type</h4>
+                    <div class="chart-container">
+                        @{
+                            var violationsByType = Model.GroupBy(v => v.Type).ToDictionary(g => g.Key, g => g.Count());
+                            var maxCount = violationsByType.Values.DefaultIfEmpty(1).Max();
+                        }
+                        @foreach (var kvp in violationsByType)
+                        {
+                            var percentage = (double)kvp.Value / maxCount * 100;
+                            <div class="chart-bar">
+                                <div class="bar-label">@(System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(kvp.Key.Replace("_", " ").ToLower()))</div>
+                                <div class="bar-container">
+                                    <div class="bar-fill" style="width: @percentage%"></div>
+                                    <span class="bar-value">@kvp.Value</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Violation Details -->
+                <div class="violation-details">
+                    <h4>Detailed Violation List</h4>
+                    <table class="violations-table">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Time</th>
+                                <th>Severity</th>
+                                <th>Description</th>
+                                <th>Evidence</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var violation in Model.OrderBy(v => v.Timestamp))
+                            {
+                                <tr>
+                                    <td>@(System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(violation.Type.Replace("_", " ").ToLower()))</td>
+                                    <td>@violation.Timestamp</td>
+                                    <td>
+                                        <span class="severity-badge @violation.Severity">
+                                            @violation.Severity.ToUpper()
+                                        </span>
+                                    </td>
+                                    <td>@violation.Description</td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(violation.ImageBase64))
+                                        {
+                                            <img src="data:image/jpeg;base64,@violation.ImageBase64" 
+                                                 alt="Evidence" 
+                                                 class="evidence-thumbnail"
+                                                 onclick="openImageModal(this.src)" />
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">No image</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="report-section">
+                <h3>Violations Analysis</h3>
+                <div class="no-violations-report">
+                    <p class="text-success">✓ No violations detected during the driving test.</p>
+                    <p>The candidate demonstrated excellent driving behavior throughout the test.</p>
+                </div>
+            </div>
+        }
+
+        <!-- Recommendations -->
+        <div class="report-section">
+            <h3>Recommendations</h3>
+            <div class="recommendations">
+                @if (user.PassTest)
+                {
+                    <p class="text-success">✓ <strong>Congratulations!</strong> The candidate has successfully passed the driving test.</p>
+                    @if (Model.Any())
+                    {
+                        <p>While the test was passed, please review the violations above for areas of improvement.</p>
+                    }
+                }
+                else
+                {
+                    <p class="text-danger">✗ <strong>Test Failed.</strong> The candidate needs additional training before retaking the test.</p>
+                    
+                    <h4>Areas for Improvement:</h4>
+                    <ul>
+                        @if (user.ReverseParkingScore < 7)
+                        {
+                            <li>Reverse parking technique needs improvement (Score: @user.ReverseParkingScore/10)</li>
+                        }
+                        @if (user.ParallelParkingScore < 7)
+                        {
+                            <li>Parallel parking skills require practice (Score: @user.ParallelParkingScore/10)</li>
+                        }
+                        @if (user.HandsOnSteeringScore < 7)
+                        {
+                            <li>Maintain proper hand positioning on steering wheel (Score: @user.HandsOnSteeringScore/10)</li>
+                        }
+                        @if (user.SeatbeltScore < 7)
+                        {
+                            <li>Ensure proper seatbelt usage at all times (Score: @user.SeatbeltScore/10)</li>
+                        }
+                        @if (user.DriverEyeScore < 7)
+                        {
+                            <li>Improve visual attention and mirror checking habits (Score: @user.DriverEyeScore/10)</li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Image Modal -->
+<div id="imageModal" class="modal" onclick="closeImageModal()">
+    <span class="close">&times;</span>
+    <img class="modal-content" id="modalImage">
+</div>
+
+@section Scripts {
+    <style>
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #007bff;
+        }
+
+        .report-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .report-content {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .report-section {
+            background: white;
+            margin-bottom: 30px;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .report-section h3 {
+            color: #007bff;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .executive-summary {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .summary-item label {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .score-table, .violations-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .score-table th, .score-table td,
+        .violations-table th, .violations-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .score-table th, .violations-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+
+        .chart-container {
+            margin-top: 15px;
+        }
+
+        .chart-bar {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .bar-label {
+            width: 200px;
+            font-weight: bold;
+        }
+
+        .bar-container {
+            flex: 1;
+            height: 30px;
+            background: #f0f0f0;
+            border-radius: 15px;
+            position: relative;
+            margin-left: 15px;
+        }
+
+        .bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #007bff, #0056b3);
+            border-radius: 15px;
+            transition: width 0.3s ease;
+        }
+
+        .bar-value {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-weight: bold;
+            color: #333;
+        }
+
+        .evidence-thumbnail {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .evidence-thumbnail:hover {
+            transform: scale(1.1);
+        }
+
+        .no-violations-report {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 5px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .recommendations {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+        }
+
+        .recommendations ul {
+            margin-top: 15px;
+        }
+
+        .recommendations li {
+            margin-bottom: 8px;
+        }
+
+        /* Print styles */
+        @@media print {
+            .report-actions, .modal {
+                display: none !important;
+            }
+            
+            .report-content {
+                max-width: none;
+                margin: 0;
+            }
+            
+            .report-section {
+                box-shadow: none;
+                border: 1px solid #ddd;
+                break-inside: avoid;
+            }
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.9);
+            cursor: pointer;
+        }
+
+        .modal-content {
+            margin: auto;
+            display: block;
+            width: 80%;
+            max-width: 700px;
+            max-height: 80%;
+            object-fit: contain;
+        }
+
+        .close {
+            position: absolute;
+            top: 15px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #bbb;
+        }
+    </style>
+
+    <script>
+        function openImageModal(imageSrc) {
+            document.getElementById('modalImage').src = imageSrc;
+            document.getElementById('imageModal').style.display = 'block';
+        }
+
+        function closeImageModal() {
+            document.getElementById('imageModal').style.display = 'none';
+        }
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeImageModal();
+            }
+        });
+    </script>
+}

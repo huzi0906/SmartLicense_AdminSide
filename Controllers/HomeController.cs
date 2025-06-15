@@ -262,5 +262,122 @@ namespace SmartLicense_AdminPanel.Controllers
             // Redirect to the Login action in AuthController
             return RedirectToAction("Login", "Auth");
         }
+
+        public async Task<IActionResult> Violations(string cnic)
+        {
+            if (string.IsNullOrEmpty(cnic))
+                return RedirectToAction("Index");
+
+            var user = await _usersCollection.Find(x => x.CNIC == cnic).FirstOrDefaultAsync();
+            if (user == null)
+                return RedirectToAction("Index");
+
+            // Get violations for this user
+            var violationsCollection = _database.GetCollection<Violation>("violations");
+            var violations = await violationsCollection
+                .Find(v => v.UserCnic == cnic)
+                .SortByDescending(v => v.TestDate)
+                .ToListAsync();
+
+            ViewBag.User = user;
+            return View(violations);
+        }
+
+        public async Task<IActionResult> ViolationDetails(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+                return RedirectToAction("Index");
+
+            var violationsCollection = _database.GetCollection<Violation>("violations");
+            var violation = await violationsCollection
+                .Find(v => v.Id == id)
+                .FirstOrDefaultAsync();
+
+            if (violation == null)
+                return RedirectToAction("Index");
+
+            return View(violation);
+        }
+
+        public async Task<IActionResult> ViolationReport(string cnic)
+        {
+            if (string.IsNullOrEmpty(cnic))
+                return RedirectToAction("Index");
+
+            var user = await _usersCollection.Find(x => x.CNIC == cnic).FirstOrDefaultAsync();
+            if (user == null)
+                return RedirectToAction("Index");
+
+            // Get violations for this user
+            var violationsCollection = _database.GetCollection<Violation>("violations");
+            var violations = await violationsCollection
+                .Find(v => v.UserCnic == cnic)
+                .SortByDescending(v => v.TestDate)
+                .ToListAsync();
+
+            // Generate violation summary
+            var violationSummary = new
+            {
+                TotalViolations = violations.Count,
+                HighSeverityCount = violations.Count(v => v.Severity == "high"),
+                MediumSeverityCount = violations.Count(v => v.Severity == "medium"),
+                LowSeverityCount = violations.Count(v => v.Severity == "low"),
+                ViolationsByType = violations
+                    .GroupBy(v => v.Type)
+                    .ToDictionary(g => g.Key, g => g.Count()),
+                RecentViolations = violations.Take(10).ToList()
+            };            ViewBag.User = user;
+            ViewBag.ViolationSummary = violationSummary;
+            return View(violations);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetViolationsPreview(string cnic)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(cnic))
+                {
+                    return Json(new { success = false, message = "CNIC is required" });
+                }
+
+                // Get violations for this user
+                var violationsCollection = _database.GetCollection<Violation>("violations");
+                var violations = await violationsCollection
+                    .Find(v => v.UserCnic == cnic)
+                    .SortByDescending(v => v.TestDate)
+                    .Limit(10) // Get only the most recent 10 violations for preview
+                    .ToListAsync();
+
+                // Create summary
+                var summary = new
+                {
+                    total = violations.Count,
+                    high = violations.Count(v => v.Severity == "high"),
+                    medium = violations.Count(v => v.Severity == "medium"),
+                    low = violations.Count(v => v.Severity == "low")
+                };
+
+                // Create simplified violation data for preview
+                var violationData = violations.Select(v => new
+                {
+                    type = v.Type,
+                    severity = v.Severity,
+                    description = v.Description,
+                    timestamp = v.Timestamp
+                }).ToList();
+
+                return Json(new
+                {
+                    success = true,
+                    violations = violationData,
+                    summary = summary
+                });            }
+            catch (Exception)
+            {
+                // Log the exception if you have logging configured
+                return Json(new { success = false, message = "Error loading violations data" });
+            }
+        }
     }
 }

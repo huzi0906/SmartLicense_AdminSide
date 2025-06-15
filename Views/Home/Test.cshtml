@@ -117,6 +117,24 @@
             </div>
         </div>
     </div>
+
+    <div class="card">
+        <h3>Violations Report</h3>
+        <div class="violations-section">
+            <div id="violationsPreview" class="violations-preview">
+                <div class="violations-loading">
+                    <p>Loading violations data...</p>
+                </div>
+            </div>
+            <div class="violations-actions">
+                <a href="@Url.Action("Violations", "Home", new { cnic = Model.CNIC })" 
+                   class="btn btn-warning">View All Violations</a>
+                <a href="@Url.Action("ViolationReport", "Home", new { cnic = Model.CNIC })" 
+                   class="btn btn-info">Generate Report</a>
+                <button id="refreshViolations" class="btn btn-secondary" onclick="loadViolationsPreview()">Refresh</button>
+            </div>
+        </div>
+    </div>
 }
 else
 {
@@ -213,6 +231,220 @@ else
             justify-content: center;
             margin-top: 15px;
         }
+
+        .violations-section {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .violations-preview {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .violations-loading {
+            text-align: center;
+            color: #6c757d;
+            padding: 20px;
+        }
+
+        .violations-loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+
+        @@keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .no-violations {
+            text-align: center;
+            padding: 20px;
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 5px;
+            color: #155724;
+        }
+
+        .violations-summary {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .summary-card {
+            text-align: center;
+            padding: 10px;
+            border-radius: 5px;
+            min-width: 80px;
+        }
+
+        .total-violations {
+            background: #e9ecef;
+            border: 1px solid #ced4da;
+        }
+
+        .high-severity {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .medium-severity {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+
+        .low-severity {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+
+        .summary-number {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .summary-label {
+            font-size: 0.9em;
+        }
+
+        .recent-violations {
+            margin-top: 15px;
+        }
+
+        .violation-item {
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 4px;
+            border-left: 4px solid;
+        }
+
+        .violation-item.high {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+        }
+
+        .violation-item.medium {
+            background: #fff3cd;
+            border-left-color: #ffc107;
+        }
+
+        .violation-item.low {
+            background: #d1ecf1;
+            border-left-color: #17a2b8;
+        }
+
+        .violation-time {
+            font-size: 0.8em;
+            color: #6c757d;
+        }
+
+        .violations-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+
+        .violations-actions .btn {
+            padding: 8px 16px;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .btn-warning {
+            background-color: #ffc107;
+            color: #212529;
+        }
+
+        .btn-info {
+            background-color: #17a2b8;
+            color: white;
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .violations-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .summary-card {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .summary-number {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .summary-label {
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+
+        .high-severity .summary-number { color: #dc3545; }
+        .medium-severity .summary-number { color: #ffc107; }
+        .low-severity .summary-number { color: #17a2b8; }
+        .total-violations .summary-number { color: #007bff; }
+
+        .violations-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .recent-violations {
+            margin-top: 15px;
+        }
+
+        .violation-item {
+            background: white;
+            border-left: 4px solid #007bff;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            border-radius: 0 4px 4px 0;
+            font-size: 0.9em;
+        }
+
+        .violation-item.high { border-left-color: #dc3545; }
+        .violation-item.medium { border-left-color: #ffc107; }
+        .violation-item.low { border-left-color: #17a2b8; }
+
+        .violation-time {
+            color: #6c757d;
+            font-size: 0.8em;
+        }
     </style>
     <script>
         function startTest() {
@@ -268,5 +500,87 @@ else
                 console.error('testReport div not found');
             }
         }
+
+        function loadViolationsPreview() {
+            const cnic = '@(Model?.CNIC ?? "")';
+            if (!cnic) {
+                document.getElementById('violationsPreview').innerHTML = 
+                    '<div class="alert alert-warning">User CNIC not found</div>';
+                return;
+            }
+            
+            const previewDiv = document.getElementById('violationsPreview');
+            
+            previewDiv.innerHTML = '<div class="violations-loading"><p>Loading violations data...</p></div>';
+            
+            fetch(`/Home/GetViolationsPreview?cnic=${cnic}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        displayViolationsPreview(data.violations, data.summary);
+                    } else {
+                        previewDiv.innerHTML = '<div class="alert alert-warning">Failed to load violations data</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading violations:', error);
+                    previewDiv.innerHTML = '<div class="alert alert-danger">Error loading violations data</div>';
+                });
+        }
+
+        function displayViolationsPreview(violations, summary) {
+            const previewDiv = document.getElementById('violationsPreview');
+            
+            if (!violations || violations.length === 0) {
+                previewDiv.innerHTML = `
+                    <div class="no-violations">
+                        <p class="text-success">✓ No violations detected for this candidate.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `
+                <div class="violations-summary">
+                    <div class="summary-card total-violations">
+                        <div class="summary-number">${summary.total}</div>
+                        <div class="summary-label">Total Violations</div>
+                    </div>
+                    <div class="summary-card high-severity">
+                        <div class="summary-number">${summary.high}</div>
+                        <div class="summary-label">High Severity</div>
+                    </div>
+                    <div class="summary-card medium-severity">
+                        <div class="summary-number">${summary.medium}</div>
+                        <div class="summary-label">Medium Severity</div>
+                    </div>
+                    <div class="summary-card low-severity">
+                        <div class="summary-number">${summary.low}</div>
+                        <div class="summary-label">Low Severity</div>
+                    </div>
+                </div>
+            `;
+
+            if (violations.length > 0) {
+                html += '<div class="recent-violations"><h5>Recent Violations:</h5>';
+                violations.slice(0, 3).forEach(violation => {
+                    html += `
+                        <div class="violation-item ${violation.severity}">
+                            <strong>${violation.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</strong>
+                            - ${violation.description}
+                            <div class="violation-time">${new Date(violation.timestamp).toLocaleString()}</div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            }
+
+            previewDiv.innerHTML = html;
+        }
+
+        // Load violations preview when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadViolationsPreview();
+        });
     </script>
 }

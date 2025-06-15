@@ -204,11 +204,9 @@ def run_pipeline():
     if rp_score is None:
         return {"error": "Reverse parking evaluation failed."}
     
-    # Extract frames and create violations for reverse parking
-    if rp_timestamps and isinstance(rp_timestamps, dict) and 'timestamps' in rp_timestamps and os.path.exists(VIDEO_FILE):
-        extract_frames(VIDEO_FILE, rp_timestamps, "output/reverse_parking_frames", VIDEO_START_TIME)
-        # Create violations with images
-        rp_violations = extract_frames_and_create_violations(VIDEO_FILE, rp_timestamps, "output/reverse_parking_frames", "reverse_parking", VIDEO_START_TIME)
+    # Create violations for reverse parking (without images)
+    if rp_timestamps and isinstance(rp_timestamps, dict) and 'timestamps' in rp_timestamps:
+        rp_violations = create_violations_without_images(rp_timestamps, "reverse_parking")
         all_violations.extend(rp_violations)
 
     # Run parallel parking evaluation
@@ -219,9 +217,9 @@ def run_pipeline():
         print("Warning: Parallel parking evaluation failed, using default score of 5.0")
         pp_score = 5.0  # Default fallback score
     else:
-        # Create violations with images for parallel parking
+        # Create violations for parallel parking (without images)
         if pp_timestamps and isinstance(pp_timestamps, dict) and 'timestamps' in pp_timestamps:
-            pp_violations = extract_frames_and_create_violations(VIDEO_FILE, pp_timestamps, "output/parallel_parking_frames", "parallel_parking", VIDEO_START_TIME)
+            pp_violations = create_violations_without_images(pp_timestamps, "parallel_parking")
             all_violations.extend(pp_violations)
 
     # Process hands-on-the-wheel and seatbelt step
@@ -306,6 +304,72 @@ def image_to_base64(image_path):
     except Exception as e:
         print(f"Error encoding image {image_path}: {e}")
         return None
+
+
+def create_violations_without_images(timestamps, violation_type):
+    """
+    Create violation objects without images for parking violations.
+    
+    Returns:
+    - List of violation dictionaries ready for database insertion
+    """
+    violations = []
+    
+    # Handle different timestamp formats
+    if not timestamps:
+        print("No timestamps provided for violation creation")
+        return violations
+    
+    # Extract timestamps list from different possible formats
+    timestamp_list = []
+    if isinstance(timestamps, dict):
+        if 'timestamps' in timestamps:
+            timestamp_list = timestamps['timestamps']
+        elif 'violation_times' in timestamps:
+            timestamp_list = timestamps['violation_times']
+    elif isinstance(timestamps, list):
+        timestamp_list = timestamps
+    else:
+        print(f"Warning: Unexpected timestamp format: {type(timestamps)}")
+        return violations
+    
+    # Create violations for each timestamp
+    for i, ts in enumerate(timestamp_list):
+        try:
+            # Define severity and description based on violation type
+            severity_map = {
+                "reverse_parking": "medium",
+                "parallel_parking": "medium", 
+                "hands_off_steering": "high",
+                "seatbelt_violation": "high",
+                "driver_eye_violation": "medium"
+            }
+            
+            description_map = {
+                "reverse_parking": "Improper reverse parking maneuver detected",
+                "parallel_parking": "Improper parallel parking maneuver detected",
+                "hands_off_steering": "Driver hands off steering wheel detected",
+                "seatbelt_violation": "Seatbelt violation detected",
+                "driver_eye_violation": "Driver eye tracking violation detected"
+            }
+            
+            violation = {
+                "userCnic": CNIC,  # Add user reference
+                "type": violation_type,
+                "timestamp": str(ts),
+                "imageBase64": "",  # No image for parking violations
+                "severity": severity_map.get(violation_type, "medium"),
+                "description": description_map.get(violation_type, f"{violation_type} violation detected"),
+                "testDate": datetime.now().isoformat()
+            }
+            violations.append(violation)
+            
+        except Exception as e:
+            print(f"Warning: Could not create violation for timestamp '{ts}': {e}")
+            continue
+    
+    print(f"Created {len(violations)} violations for {violation_type} (without images)")
+    return violations
 
 
 def extract_frames_and_create_violations(video_path, timestamps, output_dir, violation_type, video_start_time=None):
