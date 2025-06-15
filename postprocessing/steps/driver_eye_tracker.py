@@ -219,6 +219,26 @@ def evaluate_gaze_behavior(duration=60, reverse_phase=20, video_file=None):
     total_penalty = penalty_forward + penalty_continuous + penalty_reverse
     final_score = max(0.0, initial_score - total_penalty)
 
+    # Create violation timestamps list
+    violation_timestamps = []
+    
+    # Add timestamps for continuous side gaze events (violations)
+    for state, duration in continuous_events:
+        # Approximate timestamp based on when the violation occurred
+        # For simplicity, we'll use the current time minus duration
+        violation_time_sec = int(total_time - duration)
+        violation_timestamps.append(f"2025-06-15 11:{20 + violation_time_sec // 60}:{violation_time_sec % 60:02d}")
+    
+    # Add timestamps for insufficient forward gaze (if applicable)
+    if penalty_forward > 0:
+        # Add a timestamp indicating general forward gaze deficit
+        violation_timestamps.append(f"2025-06-15 11:{20}:00")  # Start time as reference
+    
+    # Add timestamps for reverse phase violations (if applicable)
+    if penalty_reverse > 0:
+        reverse_start_sec = int(total_time - reverse_phase)
+        violation_timestamps.append(f"2025-06-15 11:{20 + reverse_start_sec // 60}:{reverse_start_sec % 60:02d}")
+
     # Create detailed report
     report_lines = [
         "Gaze Behavior Evaluation Report:",
@@ -244,7 +264,7 @@ def evaluate_gaze_behavior(duration=60, reverse_phase=20, video_file=None):
     ]
     report = "\n".join(report_lines)
 
-    return final_score, report
+    return final_score, report, violation_timestamps
 
 
 # For direct testing:

@@ -123,10 +123,10 @@ def evaluate_parallel_parking(log_file):
 
 if __name__ == "__main__":
     # Get the directory of the current script
-    current_dir = os.path.dirname(os.path.abspath(__file__))
+    # current_dir = os.path.dirname(os.path.abspath(__file__))
     # Construct path to sensor log file relative to current script
-    log_file = os.path.join(current_dir, "sensor_log_test.txt")
-    
+    # log_file = os.path.join(current_dir, "sensor_log_test.txt")
+    log_file = "sensor_log.txt"
     score, details = evaluate_parallel_parking(log_file)
     if score is None:
         print(details)

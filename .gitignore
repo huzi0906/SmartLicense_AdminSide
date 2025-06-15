@@ -97,3 +97,5 @@ wwwroot/lib/
 wwwroot/**/*.min.css
 wwwroot/**/*.min.js
 wwwroot/node_modules/
+
+.venv/

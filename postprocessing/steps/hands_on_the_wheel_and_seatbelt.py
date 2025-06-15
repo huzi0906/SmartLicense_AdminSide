@@ -144,6 +144,10 @@ def generate_scorecard(df):
         one_hand_times = []
         no_hand_times = []
         both_hand_times = []
+        violation_timestamps = {
+            "hands_off_steering": [],
+            "seatbelt_violations": []
+        }
 
         # Debug all unique annotations
         # print("[DEBUG] Unique annotations:", df["Annotation"].unique())
@@ -175,10 +179,16 @@ def generate_scorecard(df):
         if get_longest_consecutive(one_hand_times) >= 5:
             hand_score = 5
             # print("[DEBUG] One hand penalty applied")
+            # Record violation timestamps for one hand violations
+            for time_sec in one_hand_times:
+                violation_timestamps["hands_off_steering"].append(f"2025-06-15 11:{20 + time_sec // 60}:{time_sec % 60:02d}")
 
         if get_longest_consecutive(no_hand_times) >= 5:
             hand_score = 0
             # print("[DEBUG] No hands penalty applied")
+            # Record violation timestamps for no hands violations
+            for time_sec in no_hand_times:
+                violation_timestamps["hands_off_steering"].append(f"2025-06-15 11:{20 + time_sec // 60}:{time_sec % 60:02d}")
 
         # Similar update for seatbelt scoring
         seatbelt_score = 0
@@ -193,16 +203,23 @@ def generate_scorecard(df):
             elif annotation == "Incorrect seatbelt":
                 seatbelt_score = 3
                 # print("[DEBUG] Incorrect seatbelt detected")
+                # Record violation timestamps
+                for time_sec in times:
+                    violation_timestamps["seatbelt_violations"].append(f"2025-06-15 11:{20 + time_sec // 60}:{time_sec % 60:02d}")
                 break
             elif annotation == "No seatbelt":
                 seatbelt_score = 0
                 # print("[DEBUG] No seatbelt detected")
+                # Record violation timestamps
+                for time_sec in times:
+                    violation_timestamps["seatbelt_violations"].append(f"2025-06-15 11:{20 + time_sec // 60}:{time_sec % 60:02d}")
                 break
 
         scorecard = {
             "hands_on_steering": hand_score,
             "seatbelt": seatbelt_score,
             "total": (hand_score + seatbelt_score) / 2,
+            "violation_timestamps": violation_timestamps
         }
         # print("[DEBUG] Final scorecard generated:", scorecard)
         return scorecard
@@ -210,7 +227,7 @@ def generate_scorecard(df):
     except Exception as e:
         # print(f"Error generating scorecard: {str(e)}")
         # print(f"Full traceback:", e.__traceback__)
-        return {"hands_on_steering": 0, "seatbelt": 0, "total": 0}
+        return {"hands_on_steering": 0, "seatbelt": 0, "total": 0, "violation_timestamps": {"hands_off_steering": [], "seatbelt_violations": []}}
 
 
 def predict_video_report(video_file="video_data.mp4"):
