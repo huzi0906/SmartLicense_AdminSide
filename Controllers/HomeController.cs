@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using SmartLicense_AdminSide.Models;
+using SmartLicense_AdminSide.Services;
 using MongoDB.Bson;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -9,17 +10,18 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication;
 
 namespace SmartLicense_AdminPanel.Controllers
-{
-    public class HomeController : Controller
+{    public class HomeController : Controller
     {
         private readonly IMongoCollection<User> _usersCollection;
         private readonly IMongoDatabase _database;
+        private readonly ChatService _chatService;
 
-        public HomeController(IMongoClient mongoClient)
+        public HomeController(IMongoClient mongoClient, ChatService chatService)
         {
             var database = mongoClient.GetDatabase("Liscence_system");
             _usersCollection = database.GetCollection<User>("users");
             _database = database;
+            _chatService = chatService;
         }
 
         public async Task<IActionResult> Index()
@@ -79,142 +81,42 @@ namespace SmartLicense_AdminPanel.Controllers
             }).ToList();
 
             return View(conversationList);
-        }
-
-        public async Task<IActionResult> FeedbackDetail(string userId)
+        }        public async Task<IActionResult> FeedbackDetail(string userId)
         {
             if (string.IsNullOrEmpty(userId))
                 return RedirectToAction("Feedback");
 
-            var objectId = new ObjectId(userId);
-            
-            var userCollection = _database.GetCollection<BsonDocument>("users");
-            var messageCollection = _database.GetCollection<BsonDocument>("messages");
-            
-            var user = await userCollection.Find(Builders<BsonDocument>.Filter.Eq("_id", objectId)).FirstOrDefaultAsync();
-            if (user == null)
-                return RedirectToAction("Feedback");
-            
-            // Safely handle 'name' and 'cnic'
-            var userName = user.Contains("name") && user["name"].BsonType == BsonType.String 
-                ? user["name"].AsString 
-                : "Unknown";
-            var userCnic = user.Contains("cnic") && user["cnic"].BsonType == BsonType.String 
-                ? user["cnic"].AsString 
-                : "Unknown";
-
-            // Check if conversation exists, if not, we'll create a new one
-            var conversationFilter = Builders<BsonDocument>.Filter.Eq("userId", objectId);
-            var conversation = await _database.GetCollection<BsonDocument>("conversations")
-                .Find(conversationFilter)
-                .FirstOrDefaultAsync();
-            
-            List<ConversationMessage> messages = new List<ConversationMessage>();
-            string conversationId;
-            
-            if (conversation == null)
+            try
             {
-                // Convert existing feedback to conversation messages
-                var feedbackCollection = _database.GetCollection<BsonDocument>("feedbacks");
-                var feedbacksCursor = await feedbackCollection
-                    .Find(Builders<BsonDocument>.Filter.Eq("userId", objectId))
-                    .SortBy(f => f["submittedAt"])
-                    .ToListAsync();
-                
-                // Create a new conversation
-                var newConversation = new BsonDocument
+                // Get user information
+                var user = await _chatService.GetUserAsync(userId);
+                if (user == null)
+                    return RedirectToAction("Feedback");
+
+                // Get or create conversation and load messages
+                var conversation = await _chatService.GetOrCreateConversationAsync(userId);
+                var messages = await _chatService.GetConversationMessagesAsync(userId);
+
+                var model = new FeedbackDetailViewModel
                 {
-                    { "userId", objectId },
-                    { "createdAt", DateTime.UtcNow },
-                    { "lastUpdatedAt", DateTime.UtcNow }
+                    UserId = userId,
+                    UserName = user.Name ?? "Unknown",
+                    UserCNIC = user.CNIC ?? "Unknown",
+                    Messages = messages
                 };
-                
-                await _database.GetCollection<BsonDocument>("conversations").InsertOneAsync(newConversation);
-                conversationId = newConversation["_id"].AsObjectId.ToString();
-                
-                // Add the old feedback messages to the new conversation system
-                foreach (var feedback in feedbacksCursor)
-                {
-                    if (feedback.TryGetValue("feedback", out BsonValue fbMessageValue) && fbMessageValue.BsonType == BsonType.String)
-                    {
-                        var fbMessage = fbMessageValue.AsString;
-                        var fbSubmittedAt = feedback.TryGetValue("submittedAt", out BsonValue submittedAtValue) && submittedAtValue.BsonType == BsonType.DateTime
-                            ? submittedAtValue.ToUniversalTime()
-                            : DateTime.UtcNow;
 
-                        var newMessage = new BsonDocument
-                        {
-                            { "conversationId", new ObjectId(conversationId) },
-                            { "message", fbMessage },
-                            { "sentAt", fbSubmittedAt },
-                            { "isAdminMessage", false }
-                        };
-
-                        await messageCollection.InsertOneAsync(newMessage);
-
-                        messages.Add(new ConversationMessage
-                        {
-                            Id = newMessage["_id"].AsObjectId.ToString(),
-                            ConversationId = conversationId,
-                            Message = fbMessage,
-                            SentAt = fbSubmittedAt,
-                            IsAdminMessage = false
-                        });
-                    }
-                    // Optionally log or skip if feedback is missing, but no exception will occur
-                }
+                return View(model);
             }
-            else
+            catch (Exception ex)
             {
-                conversationId = conversation["_id"].AsObjectId.ToString();
-                
-                // Fetch existing messages
-                var messagesCursor = await messageCollection
-                    .Find(Builders<BsonDocument>.Filter.Eq("conversationId", new ObjectId(conversationId)))
-                    .SortBy(m => m["sentAt"])
-                    .ToListAsync();
-                    
-                foreach (var message in messagesCursor)
-                {
-                    string msgContent = message.TryGetValue("message", out BsonValue msgValue) && msgValue.BsonType == BsonType.String
-                        ? msgValue.AsString
-                        : string.Empty;
-
-                    DateTime sentAt = message.TryGetValue("sentAt", out BsonValue sentAtValue) && sentAtValue.BsonType == BsonType.DateTime
-                        ? sentAtValue.ToUniversalTime()
-                        : DateTime.MinValue;
-
-                    bool isAdmin = message.TryGetValue("isAdminMessage", out BsonValue isAdminValue) && isAdminValue.BsonType == BsonType.Boolean
-                        ? isAdminValue.AsBoolean
-                        : false;
-
-                    string id = message["_id"].AsObjectId.ToString();
-
-                    messages.Add(new ConversationMessage
-                    {
-                        Id = id,
-                        ConversationId = conversationId,
-                        Message = msgContent,
-                        SentAt = sentAt,
-                        IsAdminMessage = isAdmin
-                    });
-                }
+                // Log error and redirect
+                return RedirectToAction("Feedback");
             }
-            
-            var model = new FeedbackDetailViewModel
-            {
-                UserId = userId,
-                UserName = userName,
-                UserCNIC = userCnic,
-                Messages = messages
-            };
-            
-            return View(model);
-        }
-
-        [HttpPost]
+        }[HttpPost]
         public async Task<IActionResult> SendReply(string userId, string message)
         {
+            // This method is now deprecated in favor of SignalR real-time messaging
+            // We'll keep it as a fallback for non-SignalR clients
             if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(message))
                 return RedirectToAction("Feedback");
 
@@ -377,6 +279,29 @@ namespace SmartLicense_AdminPanel.Controllers
             {
                 // Log the exception if you have logging configured
                 return Json(new { success = false, message = "Error loading violations data" });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CreateTestUser()
+        {
+            try
+            {
+                var testUser = new User
+                {
+                    Id = ObjectId.GenerateNewId().ToString(),
+                    Name = "Test User",
+                    CNIC = "12345-6789012-3",
+                    Email = "test@example.com"
+                };
+
+                await _usersCollection.InsertOneAsync(testUser);
+
+                return Json(new { success = true, userId = testUser.Id, message = "Test user created successfully" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Failed to create test user: " + ex.Message });
             }
         }
     }

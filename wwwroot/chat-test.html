@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>SignalR Chat Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      #messages {
+        border: 1px solid #ccc;
+        height: 300px;
+        overflow-y: auto;
+        padding: 10px;
+        margin: 10px 0;
+      }
+      #messageInput {
+        width: 300px;
+        padding: 5px;
+      }
+      #sendButton {
+        padding: 5px 10px;
+      }
+      .message {
+        margin: 5px 0;
+        padding: 5px;
+        border-radius: 5px;
+      }
+      .admin {
+        background-color: #e3f2fd;
+      }
+      .user {
+        background-color: #f3e5f5;
+      }
+      #status {
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 5px;
+      }
+      .connected {
+        background-color: #d4edda;
+        color: #155724;
+      }
+      .disconnected {
+        background-color: #f8d7da;
+        color: #721c24;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>SignalR Chat Test</h1>
+
+    <div id="status" class="disconnected">Disconnected</div>
+
+    <div>
+      <label>User ID:</label>
+      <input type="text" id="userIdInput" value="test-user-123" />
+      <button id="joinButton">Join Conversation</button>
+    </div>
+
+    <div id="messages"></div>
+
+    <div>
+      <input type="text" id="messageInput" placeholder="Type a message..." />
+      <button id="sendButton" disabled>Send</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.0/signalr.min.js"></script>
+    <script>
+      const connection = new signalR.HubConnectionBuilder()
+        .withUrl("/chathub")
+        .withAutomaticReconnect()
+        .build();
+
+      const statusDiv = document.getElementById("status");
+      const messagesDiv = document.getElementById("messages");
+      const messageInput = document.getElementById("messageInput");
+      const sendButton = document.getElementById("sendButton");
+      const userIdInput = document.getElementById("userIdInput");
+      const joinButton = document.getElementById("joinButton");
+
+      let currentUserId = "";
+
+      function updateStatus(status, message) {
+        statusDiv.textContent = message;
+        statusDiv.className = status;
+        sendButton.disabled = status !== "connected";
+      }
+
+      function addMessage(message, isAdmin, senderName, sentAt) {
+        const messageDiv = document.createElement("div");
+        messageDiv.className = "message " + (isAdmin ? "admin" : "user");
+        messageDiv.innerHTML = `
+                <strong>${senderName}</strong> <small>(${sentAt})</small><br>
+                ${message}
+            `;
+        messagesDiv.appendChild(messageDiv);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      }
+
+      // Connection events
+      connection.onreconnecting(() =>
+        updateStatus("disconnected", "Reconnecting...")
+      );
+      connection.onreconnected(() => {
+        updateStatus("connected", "Connected");
+        if (currentUserId) {
+          connection.invoke("JoinConversation", currentUserId);
+        }
+      });
+      connection.onclose(() => updateStatus("disconnected", "Disconnected"));
+
+      // SignalR events
+      connection.on("Connected", function (connectionId) {
+        console.log("Connected with ID: " + connectionId);
+      });
+
+      connection.on("JoinedConversation", function (userId) {
+        console.log("Joined conversation for user: " + userId);
+      });
+
+      connection.on("ReceiveMessage", function (messageData) {
+        addMessage(
+          messageData.message,
+          messageData.isAdminMessage,
+          messageData.senderName,
+          messageData.sentAt
+        );
+      });
+
+      connection.on("Error", function (errorMessage) {
+        alert("Error: " + errorMessage);
+      });
+
+      // Start connection
+      connection
+        .start()
+        .then(function () {
+          updateStatus("connected", "Connected");
+        })
+        .catch(function (err) {
+          console.error("Error connecting: " + err.toString());
+          updateStatus("disconnected", "Connection failed");
+        });
+
+      // Event handlers
+      joinButton.addEventListener("click", function () {
+        currentUserId = userIdInput.value.trim();
+        if (
+          currentUserId &&
+          connection.state === signalR.HubConnectionState.Connected
+        ) {
+          connection.invoke("JoinConversation", currentUserId);
+          joinButton.textContent = "Joined: " + currentUserId;
+          joinButton.disabled = true;
+        }
+      });
+
+      sendButton.addEventListener("click", function () {
+        const message = messageInput.value.trim();
+        if (
+          message &&
+          currentUserId &&
+          connection.state === signalR.HubConnectionState.Connected
+        ) {
+          connection
+            .invoke("SendMessage", currentUserId, message, true) // true for admin message
+            .then(function () {
+              messageInput.value = "";
+            })
+            .catch(function (err) {
+              console.error("Error sending message: " + err.toString());
+              alert("Failed to send message");
+            });
+        }
+      });
+
+      messageInput.addEventListener("keypress", function (e) {
+        if (e.key === "Enter" && !sendButton.disabled) {
+          sendButton.click();
+        }
+      });
+    </script>
+  </body>
+</html>

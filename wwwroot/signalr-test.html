@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>SignalR Test</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.0/signalr.min.js"></script>
+  </head>
+  <body>
+    <h1>SignalR Connection Test</h1>
+    <div id="status">Connecting...</div>
+    <div id="messages"></div>
+
+    <input
+      type="text"
+      id="userIdInput"
+      placeholder="User ID"
+      value="67660bb5eaee56a6ea5b1e3f"
+    />
+    <input type="text" id="messageInput" placeholder="Message" />
+    <button onclick="sendMessage()">Send Message</button>
+
+    <script>
+      const connection = new signalR.HubConnectionBuilder()
+        .withUrl("http://localhost:5015/chathub")
+        .withAutomaticReconnect()
+        .build();
+
+      const statusDiv = document.getElementById("status");
+      const messagesDiv = document.getElementById("messages");
+
+      function updateStatus(message) {
+        statusDiv.textContent = message;
+        console.log(message);
+      }
+
+      function addMessage(message) {
+        const div = document.createElement("div");
+        div.textContent = new Date().toLocaleTimeString() + ": " + message;
+        messagesDiv.appendChild(div);
+      }
+
+      connection
+        .start()
+        .then(function () {
+          updateStatus("Connected to SignalR hub");
+
+          // Test joining a conversation
+          connection.invoke("JoinConversation", "67660bb5eaee56a6ea5b1e3f");
+        })
+        .catch(function (err) {
+          updateStatus("Connection failed: " + err.toString());
+        });
+
+      connection.on("Connected", function (connectionId) {
+        addMessage("Connected with ID: " + connectionId);
+      });
+
+      connection.on("JoinedConversation", function (userId) {
+        addMessage("Joined conversation for user: " + userId);
+      });
+
+      connection.on("ReceiveMessage", function (messageData) {
+        addMessage("Received: " + JSON.stringify(messageData));
+      });
+
+      connection.on("Error", function (errorMessage) {
+        addMessage("Error: " + errorMessage);
+      });
+
+      function sendMessage() {
+        const userId = document.getElementById("userIdInput").value;
+        const message = document.getElementById("messageInput").value;
+
+        if (userId && message) {
+          connection
+            .invoke("SendMessage", userId, message, true)
+            .then(() => {
+              document.getElementById("messageInput").value = "";
+              addMessage("Sent: " + message);
+            })
+            .catch(err => {
+              addMessage("Send failed: " + err.toString());
+            });
+        }
+      }
+    </script>
+  </body>
+</html>

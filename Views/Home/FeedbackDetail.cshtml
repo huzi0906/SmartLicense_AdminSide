@@ -95,15 +95,15 @@ html, body {
 
 <div class="chat-wrapper">
     <div class="chat-header">
-        <div>
+        @* <div>
             <a href="@Url.Action("Feedback", "Home")" class="btn btn-secondary">
                 <i class="fa fa-arrow-left"></i> Back
             </a>
-        </div>
+        </div> *@
         <h2>Conversation with @Model.UserName (@Model.UserCNIC)</h2>
     </div>
 
-    <div class="chat-container">
+    <div class="chat-container" id="chatContainer">
         @foreach (var message in Model.Messages)
         {
             <div class="message @(message.IsAdminMessage ? "admin" : "user")">
@@ -114,11 +114,178 @@ html, body {
         }
     </div>
 
-    <form asp-action="SendReply" method="post" class="chat-input">
-        <input type="hidden" name="userId" value="@Model.UserId" />
-        <textarea name="message" placeholder="Write a reply..." required></textarea>
-        <button type="submit" class="btn send">
+    <div class="chat-input">
+        <textarea id="messageInput" placeholder="Write a reply..." required></textarea>
+        <button type="button" id="sendButton" class="btn send">
             <i class="fa fa-paper-plane"></i> Send
         </button>
-    </form>
+    </div>
 </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.0/signalr.min.js"></script>
+<script>
+    const userId = '@Model.UserId';
+    const userName = '@Model.UserName';
+    let connectionStatus = document.createElement('div');
+    connectionStatus.id = 'connectionStatus';
+    connectionStatus.style.cssText = 'position: fixed; top: 10px; right: 10px; padding: 10px; border-radius: 5px; z-index: 1000; font-size: 14px;';
+    document.body.appendChild(connectionStatus);
+    
+    function updateConnectionStatus(status, message) {
+        connectionStatus.textContent = message;
+        connectionStatus.className = status;
+        if (status === 'connected') {
+            connectionStatus.style.backgroundColor = '#d4edda';
+            connectionStatus.style.color = '#155724';
+            connectionStatus.style.border = '1px solid #c3e6cb';
+        } else if (status === 'connecting') {
+            connectionStatus.style.backgroundColor = '#fff3cd';
+            connectionStatus.style.color = '#856404';
+            connectionStatus.style.border = '1px solid #ffeaa7';
+        } else {
+            connectionStatus.style.backgroundColor = '#f8d7da';
+            connectionStatus.style.color = '#721c24';
+            connectionStatus.style.border = '1px solid #f5c6cb';
+        }
+    }
+    
+    updateConnectionStatus('connecting', 'Connecting to chat...');
+    
+    // Create SignalR connection
+    const connection = new signalR.HubConnectionBuilder()
+        .withUrl("/chathub")
+        .withAutomaticReconnect()
+        .build();
+
+    // Connection event handlers
+    connection.onreconnecting(() => {
+        updateConnectionStatus('connecting', 'Reconnecting...');
+    });
+
+    connection.onreconnected(() => {
+        updateConnectionStatus('connected', 'Connected');
+        connection.invoke("JoinConversation", userId);
+    });
+
+    connection.onclose(() => {
+        updateConnectionStatus('disconnected', 'Disconnected');
+    });
+
+    // Start the connection
+    connection.start().then(function () {
+        updateConnectionStatus('connected', 'Connected');
+        
+        // Join the conversation group
+        connection.invoke("JoinConversation", userId);
+        
+    }).catch(function (err) {
+        console.error("Error connecting to SignalR hub: " + err.toString());
+        updateConnectionStatus('disconnected', 'Connection failed');
+    });
+
+    // Listen for connection confirmation
+    connection.on("Connected", function (connectionId) {
+        console.log("Connected with ID: " + connectionId);
+    });
+
+    connection.on("JoinedConversation", function (joinedUserId) {
+        console.log("Joined conversation for user: " + joinedUserId);
+    });
+
+    // Listen for incoming messages
+    connection.on("ReceiveMessage", function (messageData) {
+        const chatContainer = document.getElementById('chatContainer');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message ' + (messageData.isAdminMessage ? 'admin' : 'user');
+        
+        messageDiv.innerHTML = `
+            <strong>${messageData.senderName}</strong>
+            <span class="timestamp">${messageData.sentAt}</span>
+            <p>${messageData.message}</p>
+        `;
+        
+        chatContainer.appendChild(messageDiv);
+        
+        // Scroll to bottom
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+        
+        // Optional: Show notification for new messages
+        if (document.hidden) {
+            if (Notification.permission === "granted") {
+                new Notification("New message from " + messageData.senderName, {
+                    body: messageData.message,
+                    icon: "/favicon.ico"
+                });
+            }
+        }
+    });
+
+    // Listen for errors
+    connection.on("Error", function (errorMessage) {
+        alert("Error: " + errorMessage);
+        updateConnectionStatus('error', 'Error occurred');
+    });
+
+    // Send message function
+    function sendMessage() {
+        const messageInput = document.getElementById('messageInput');
+        const message = messageInput.value.trim();
+        
+        if (message === '') {
+            return;
+        }
+        
+        if (connection.state !== signalR.HubConnectionState.Connected) {
+            alert("Not connected to chat server. Please wait for reconnection.");
+            return;
+        }
+        
+        // Disable send button temporarily
+        const sendButton = document.getElementById('sendButton');
+        sendButton.disabled = true;
+        sendButton.textContent = 'Sending...';
+        
+        // Send message via SignalR
+        connection.invoke("SendMessage", userId, message, true) // true for admin message
+            .then(function () {
+                messageInput.value = '';
+                sendButton.disabled = false;
+                sendButton.innerHTML = '<i class="fa fa-paper-plane"></i> Send';
+            })
+            .catch(function (err) {
+                console.error("Error sending message: " + err.toString());
+                alert("Failed to send message. Please try again.");
+                sendButton.disabled = false;
+                sendButton.innerHTML = '<i class="fa fa-paper-plane"></i> Send';
+            });
+    }
+
+    // Event listeners
+    document.getElementById('sendButton').addEventListener('click', sendMessage);
+    
+    document.getElementById('messageInput').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+
+    // Auto-scroll to bottom on page load
+    window.addEventListener('load', function() {
+        const chatContainer = document.getElementById('chatContainer');
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+        
+        // Request notification permission
+        if (Notification.permission === "default") {
+            Notification.requestPermission();
+        }
+    });
+
+    // Clean up connection when leaving the page
+    window.addEventListener('beforeunload', function () {
+        if (connection) {
+            connection.invoke("LeaveConversation", userId);
+            connection.stop();
+        }
+    });
+</script>

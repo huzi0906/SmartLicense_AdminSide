@@ -1,6 +1,7 @@
 using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using MongoDB.Driver;
+using SmartLicense_AdminSide.Hubs;
 
 Env.Load();
 
@@ -15,6 +16,8 @@ builder.Services.AddSingleton<IMongoClient>(sp =>
 
 // Add services to the container
 builder.Services.AddControllersWithViews();
+builder.Services.AddSignalR(); // Add SignalR services
+builder.Services.AddScoped<SmartLicense_AdminSide.Services.ChatService>(); // Add ChatService
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
@@ -49,5 +52,8 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+// Map SignalR hub
+app.MapHub<ChatHub>("/chathub");
 
 app.Run();
