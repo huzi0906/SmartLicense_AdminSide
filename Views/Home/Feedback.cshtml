@@ -21,7 +21,7 @@
                 <td>@item.CNIC</td>
                 <td>@item.Name</td>
                 <td>
-                    <a href="@Url.Action("FeedbackDetail", new { userId = item.UserId })">
+                    <a href="@Url.Action("FeedbackDetail", "Home", new { userId = item.UserId })">
                         View Conversation
                     </a>
                     @* <span class="feedback-count">@item.Count</span> *@

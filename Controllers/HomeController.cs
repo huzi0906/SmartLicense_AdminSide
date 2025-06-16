@@ -27,7 +27,7 @@ namespace SmartLicense_AdminPanel.Controllers
 
         public async Task<IActionResult> Index()
         {
-            var users = await _usersCollection.Find(_ => true).ToListAsync();
+            var users = await _usersCollection.Find(u => true).ToListAsync();
             return View(users);
         }
 
@@ -107,12 +107,12 @@ namespace SmartLicense_AdminPanel.Controllers
                     UserCNIC = user.CNIC ?? "Unknown",
                     Messages = messages
                 };
-
                 return View(model);
             }
             catch (Exception ex)
             {
                 // Log error and redirect
+                Console.WriteLine($"Error in FeedbackDetail: {ex.Message}");
                 return RedirectToAction("Feedback");
             }
         }

@@ -1,3 +1,4 @@
+// Conversation message
 using System;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
@@ -8,10 +9,10 @@ namespace SmartLicense_AdminSide.Models
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
-        public string Id { get; set; } = null!;
+        public required string Id { get; set; }
 
         [BsonRepresentation(BsonType.ObjectId)]
-        public string ConversationId { get; set; } = null!;
+        public required string ConversationId { get; set; }
         
         public required string Message { get; set; }
         

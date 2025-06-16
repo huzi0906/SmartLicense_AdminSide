@@ -1,3 +1,4 @@
+//Conversation
 using System;
 using System.Collections.Generic;
 using MongoDB.Bson;
@@ -9,10 +10,10 @@ namespace SmartLicense_AdminSide.Models
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
-        public string Id { get; set; } = null!;
+        public required string Id { get; set; }
 
         [BsonRepresentation(BsonType.ObjectId)]
-        public string UserId { get; set; } = null!;
+        public required string UserId { get; set; }
         
         public DateTime CreatedAt { get; set; }
         

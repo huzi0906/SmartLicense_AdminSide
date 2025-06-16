@@ -1,96 +1,168 @@
-using MongoDB.Bson;
+// CHat service
 using MongoDB.Driver;
+using SmartLicense_AdminSide.Models;
+using MongoDB.Bson;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using SmartLicense_AdminSide.Models;
 
 namespace SmartLicense_AdminSide.Services
 {
     public class ChatService
     {
-        private readonly IMongoCollection<Conversation> _conversationsCollection;
-        private readonly IMongoCollection<ConversationMessage> _messagesCollection;
+        private readonly IMongoCollection<BsonDocument> _conversationsCollection;
+        private readonly IMongoCollection<BsonDocument> _messagesCollection;
         private readonly IMongoCollection<User> _usersCollection;
+        private readonly IMongoDatabase _database;
 
-        public ChatService(IMongoDatabase database)
+        public ChatService(IMongoClient mongoClient)
         {
-            _conversationsCollection = database.GetCollection<Conversation>("conversations");
-            _messagesCollection = database.GetCollection<ConversationMessage>("messages");
-            _usersCollection = database.GetCollection<User>("users");
+            _database = mongoClient.GetDatabase("Liscence_system");
+            _conversationsCollection = _database.GetCollection<BsonDocument>("conversations");
+            _messagesCollection = _database.GetCollection<BsonDocument>("messages");
+            _usersCollection = _database.GetCollection<User>("users");
         }
 
-        public async Task<User> GetUserAsync(string userId)
+        public async Task<Conversation> GetOrCreateConversationAsync(string userId)
         {
-            return await _usersCollection.Find(u => u.Id == userId).FirstOrDefaultAsync();
+            var userObjectId = new ObjectId(userId);
+            var conversationDocument = await _conversationsCollection
+                .Find(Builders<BsonDocument>.Filter.Eq("userId", userObjectId))
+                .FirstOrDefaultAsync();
+
+            if (conversationDocument == null)
+            {
+                var newConversationDocument = new BsonDocument
+                {
+                    { "userId", userObjectId },
+                    { "createdAt", DateTime.UtcNow },
+                    { "lastUpdatedAt", DateTime.UtcNow }
+                };
+
+                await _conversationsCollection.InsertOneAsync(newConversationDocument);
+                conversationDocument = newConversationDocument;
+            }
+
+            // Convert BsonDocument to Conversation model
+            var conversation = new Conversation
+            {
+                Id = conversationDocument["_id"].AsObjectId.ToString(),
+                UserId = userId,
+                CreatedAt = conversationDocument["createdAt"].ToUniversalTime(),
+                LastUpdatedAt = conversationDocument["lastUpdatedAt"].ToUniversalTime(),
+                Messages = new List<ConversationMessage>()
+            };
+
+            return conversation;
         }
 
         public async Task<ConversationMessage> SaveMessageAsync(string userId, string message, bool isAdminMessage)
         {
-            // Get or create the conversation for the user
             var conversation = await GetOrCreateConversationAsync(userId);
-
-            // Create the new message
+            
             var newMessage = new ConversationMessage
             {
                 Id = ObjectId.GenerateNewId().ToString(),
                 ConversationId = conversation.Id,
                 Message = message,
-                SentAt = DateTime.UtcNow,
-                IsAdminMessage = isAdminMessage
+                IsAdminMessage = isAdminMessage,
+                SentAt = DateTime.UtcNow
             };
 
-            // Save the message to the database
-            await _messagesCollection.InsertOneAsync(newMessage);
+            // Save message to messages collection
+            var messageDocument = new BsonDocument
+            {
+                { "conversationId", new ObjectId(conversation.Id) },
+                { "message", message },
+                { "isAdminMessage", isAdminMessage },
+                { "sentAt", DateTime.UtcNow }
+            };
 
-            // Update the conversation's lastUpdatedAt timestamp
-            var update = Builders<Conversation>.Update.Set(c => c.LastUpdatedAt, DateTime.UtcNow);
-            await _conversationsCollection.UpdateOneAsync(c => c.Id == conversation.Id, update);
+            await _messagesCollection.InsertOneAsync(messageDocument);
+
+            // Update conversation's lastUpdatedAt
+            var conversationFilter = Builders<BsonDocument>.Filter.Eq("_id", new ObjectId(conversation.Id));
+            var conversationUpdate = Builders<BsonDocument>.Update.Set("lastUpdatedAt", DateTime.UtcNow);
+            await _conversationsCollection.UpdateOneAsync(conversationFilter, conversationUpdate);
 
             return newMessage;
         }
 
-        public async Task<Conversation> GetOrCreateConversationAsync(string userId)
-        {
-            // Try to find an existing conversation
-            var conversation = await _conversationsCollection
-                .Find(c => c.UserId == userId)
-                .FirstOrDefaultAsync();
-
-            if (conversation == null)
-            {
-                // Create a new conversation if none exists
-                conversation = new Conversation
-                {
-                    Id = ObjectId.GenerateNewId().ToString(),
-                    UserId = userId,
-                    CreatedAt = DateTime.UtcNow,
-                    LastUpdatedAt = DateTime.UtcNow,
-                    Messages = new List<ConversationMessage>()
-                };
-                await _conversationsCollection.InsertOneAsync(conversation);
-            }
-
-            return conversation;
-        }
-
         public async Task<List<ConversationMessage>> GetConversationMessagesAsync(string userId)
         {
-            var conversation = await _conversationsCollection
-                .Find(c => c.UserId == userId)
+            // First get the conversation
+            var userObjectId = new ObjectId(userId);
+            var conversationDocument = await _conversationsCollection
+                .Find(Builders<BsonDocument>.Filter.Eq("userId", userObjectId))
                 .FirstOrDefaultAsync();
 
-            if (conversation == null)
+            if (conversationDocument == null)
             {
                 return new List<ConversationMessage>();
             }
 
-            var messages = await _messagesCollection
-                .Find(m => m.ConversationId == conversation.Id)
-                .SortBy(m => m.SentAt)
+            var conversationId = conversationDocument["_id"].AsObjectId;
+            
+            // Get messages for this conversation
+            var messageDocuments = await _messagesCollection
+                .Find(Builders<BsonDocument>.Filter.Eq("conversationId", conversationId))
+                .Sort(Builders<BsonDocument>.Sort.Ascending("sentAt"))
                 .ToListAsync();
 
+            var messages = new List<ConversationMessage>();
+            foreach (var doc in messageDocuments)
+            {
+                var message = new ConversationMessage
+                {
+                    Id = doc["_id"].AsObjectId.ToString(),
+                    ConversationId = conversationId.ToString(),
+                    Message = doc["message"].AsString,
+                    IsAdminMessage = doc.Contains("isAdminMessage") ? doc["isAdminMessage"].AsBoolean : false,
+                    SentAt = doc["sentAt"].ToUniversalTime()
+                };
+                messages.Add(message);
+            }
+
             return messages;
+        }
+
+        public async Task<User> GetUserAsync(string userId)
+        {
+            return await _usersCollection
+                .Find(u => u.Id == userId)
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<User> GetUserByCnicAsync(string cnic)
+        {
+            return await _usersCollection
+                .Find(u => u.CNIC == cnic)
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<List<Conversation>> GetRecentConversationsAsync(int limit = 50)
+        {
+            var conversationDocuments = await _conversationsCollection
+                .Find(Builders<BsonDocument>.Filter.Empty)
+                .Sort(Builders<BsonDocument>.Sort.Descending("lastUpdatedAt"))
+                .Limit(limit)
+                .ToListAsync();
+
+            var conversations = new List<Conversation>();
+            foreach (var doc in conversationDocuments)
+            {
+                var conversation = new Conversation
+                {
+                    Id = doc["_id"].AsObjectId.ToString(),
+                    UserId = doc["userId"].AsObjectId.ToString(),
+                    CreatedAt = doc["createdAt"].ToUniversalTime(),
+                    LastUpdatedAt = doc["lastUpdatedAt"].ToUniversalTime(),
+                    Messages = new List<ConversationMessage>()
+                };
+                conversations.Add(conversation);
+            }
+
+            return conversations;
         }
     }
 }
